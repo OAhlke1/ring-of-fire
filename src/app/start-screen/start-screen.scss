@@ -1,0 +1,14 @@
+@import "../../mixins.scss";
+
+.start-screen {
+    @include disFlex($aI: center, $jC: center);
+    width: 100vw;
+    max-width: 100%;
+    height: 100vh;
+    background-color: #404040;
+
+    img {
+        width: auto;
+        height: 100%;
+    }
+}

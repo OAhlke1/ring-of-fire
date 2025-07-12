@@ -1,0 +1,17 @@
+@mixin disFlex($fD: row, $aI: flex-start, $jC: flex-start, $fWrap: wrap, $rG: 0, $cG: 0) {
+    display: flex;
+    flex-direction: $fD;
+    align-items: $aI;
+    justify-content: $jC;
+    flex-wrap: $fWrap;
+    row-Gap: $rG;
+    column-gap: $cG;
+}
+
+@mixin position($pos: relative, $t: unset, $r: unset, $b: unset, $l: unset) {
+    position: $pos;
+    top: $t;
+    right: $r;
+    bottom: $b;
+    left: $l;
+}
