@@ -1,4 +1,5 @@
 @import "../../mixins.scss";
+@import "../../fonts.scss";
 
 .start-screen {
     @include disFlex($aI: center, $jC: center);
@@ -6,9 +7,56 @@
     max-width: 100%;
     height: 100vh;
     background-color: #404040;
+    @include position($pos: relative);
+    overflow-x: hidden;
 
     img {
+        // min-width: 500px;
         width: auto;
         height: 100%;
+    }
+
+    .start-label-box {
+        min-width: 250px;
+        width: calc(31200%/1920);
+        min-height: calc(250px/27.12);
+        @include disFlex($aI: center, $jC: center);
+        @include position($pos: absolute, $b: calc(250%/27), $l: 50%);
+        transform: translateX(-50%);
+        aspect-ratio: 107 / 37;
+        background-image: url('/assets/images/startlabel.png');
+        background-size: 100% auto;
+        background-repeat: no-repeat;
+        background-position: 0 0;
+        background-size: 100% auto;
+        cursor: pointer;
+
+        img {
+            width: 100%;
+            height: auto;
+        }
+
+        .start-game-text {
+            @include disFlex($aI: center, $jC: center);
+            @include position($pos: relative);
+            width: 100%;
+            height: 100%;
+
+            p {
+                width: 100%;
+                font-family: 'univers-condensed-medium';
+                font-size: 30px;
+                text-align: center;
+                margin: 0;
+                padding: 0;
+                @include position($pos: absolute, $t: 50%, $l: 50%);
+                transform: translate(-50%, -50%);
+                user-select: none;
+            }
+        }
+
+        &:hover {
+            filter: brightness(1.75);
+        }
     }
 }
