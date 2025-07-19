@@ -1,0 +1,29 @@
+@import '../../mixins.scss';
+
+.field {
+    @include disFlex($aI: center, $jC: center);
+    width: 100vw;
+    max-width: 100%;
+    height: 100vh;
+    background-image: url('/assets/images/board.jpg');
+    background-size: 100% auto;
+
+    .card-stack {
+        min-width: 100px;
+        width: 7.65625%;
+        max-width: 115px;
+        aspect-ratio: 23 / 36;
+        @include position($pos: relative);
+
+        .card-image {
+            width: 100%;
+        }
+
+        playing-card {
+            width: 100%;
+            height: 100%;
+            @include position($pos: absolute, $t: 0, $l: 0);
+            // transform: translate(-50%, -50%);
+        }
+    }
+}

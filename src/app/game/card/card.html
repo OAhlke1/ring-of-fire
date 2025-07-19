@@ -1,0 +1,11 @@
+<div class="card-cont-inner" [ngClass]="{'hover-card': cursorOverCard, 'pick-card': takeCardAnimation, 'rotating': cardRotates}" (click)="takeCard()" (mouseover)="cardHoverEffectOn()" (mouseleave)="cardHoverEffectOff()">
+    <img #cardCover
+        [src]="cardFrontBack.backUrl" alt=""
+        [ngClass]="{'cardCover': true, 'hidden': cardCoverHidden}"
+    >
+    <img
+        #cardFace
+        [src]="cardFrontBack.frontUrl" alt=""
+        [ngClass]="{'cardFace': true, 'hidden': cardFaceHidden}"
+    >
+</div>

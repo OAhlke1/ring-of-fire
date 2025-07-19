@@ -1,0 +1,19 @@
+<div class="field">
+    <div class="card-stack">
+        @for(playingCard of gameService.cardFrontLinks; track playingCard.link; let index = $index) {
+            <playing-card
+                [ngClass]="{'last-card': index === gameService.cardFrontLinks.length-1}"
+                [cardFrontBack]="{backUrl: gameService.cardBackLink, frontUrl: playingCard.link}"
+                [ngStyle]="{'z-index': index, 'left.px': index}"
+                [cardIndex]="index">
+            </playing-card>
+        }
+        <!-- <div class="card-stack">
+            <playing-card *ngFor="let playingCard of gameService.cardFrontLinks; let index = index"
+                [ngClass]="{'last-card': index === gameService.cardFrontLinks.length - 1}"
+                [cardFrontBack]="{backUrl: gameService.cardBackLink, frontUrl: playingCard.link}"
+                [ngStyle]="{'z-index': index, 'left.px': index}" [cardIndex]="index">
+            </playing-card>
+        </div> -->
+    </div>
+</div>
