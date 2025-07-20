@@ -7,6 +7,7 @@
     height: 100vh;
     background-image: url('/assets/images/board.jpg');
     background-size: 100% auto;
+    @include position($pos: relative, $t: 0, $l: 0);
 
     .card-stack {
         min-width: 100px;
@@ -25,5 +26,20 @@
             @include position($pos: absolute, $t: 0, $l: 0);
             // transform: translate(-50%, -50%);
         }
+    }
+
+    taken-card {
+        width: 100px;
+        @include position($pos: absolute, $t: 0, $l: 0);
+
+        img {
+            width: 100%;
+            height: auto;
+            transform: scaleX(1) !important;
+        }
+    }
+
+    .ring-stack {
+        @include position($pos: relative);
     }
 }
