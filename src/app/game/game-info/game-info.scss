@@ -1,0 +1,17 @@
+@import '../../../mixins.scss';
+
+.game-info {
+    @include disFlex($aI: center, $jC: center, $cG: 5%);
+    width: 100%;
+
+    textarea {
+        width: 92%;
+        height: 30%;
+    }
+
+    button {
+        width: 3%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+}

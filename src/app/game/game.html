@@ -1,14 +1,58 @@
 <div class="field">
-    <div class="card-stack">
-        @for(playingCard of gameModel.stack; track playingCard; let index = $index) {
-        <playing-card [ngClass]="{'last-card': index === gameModel.stack.length-1}" [cardStack]="gameModel.stack"
-            [cardIndex]="index" [ringStack]="gameModel.ringStack"
-            [cardFrontBack]="{backUrl: gameModel.cardBackLink, frontUrl: playingCard}"
-            [ngStyle]="{'z-index': index, 'left.px': index}">
-        </playing-card>
+    <div *ngIf="!fbs.loadingPlayers; else loadingPlayerTemplate"
+        [ngClass]="{'player-bar': true, 'players-shown': playersShown && !playersHidden, 'players-hidden': !playersShown && playersHidden}">
+        @if(gameModel.playersArray.length > 0){
+            @for(player of gameModel.playersArray; track player; let index = $index) {
+            <app-player [name]="gameModel.playersArray[index].name"
+                [backgroundColor]="gameModel.playersArray[index].isActive ? 'red' : player.bgColor"
+                [ngClass]="{'disNone': !gameModel.playersArray[index].onlineStatus, 'is-active': gameModel.playersArray[index].isActive}"
+                (click)="setActive(index)">
+            </app-player>
+            }
         }
     </div>
+
+    <ng-template #loadingPlayerTemplate>
+        <p>Loading players...</p>
+    </ng-template>
+
+    <div *ngIf="!gameModel.loadingCards; else loadingCardTemplate" class="card-stack">
+        <!-- Nur anzeigen, wenn die Karten geladen sind -->
+        <div *ngFor="let playingCard of gameModel.stack; let index = index">
+            <playing-card [ngClass]="{'last-card': index === gameModel.stack.length-1}" [cardStack]="gameModel.stack"
+                [cardPositions]="gameModel.playedCardPositions" [cardIndex]="index" [ringStack]="gameModel.ringStack"
+                [cardFrontBack]="{backUrl: gameModel.cardBackLink, frontUrl: playingCard}"
+                [ngStyle]="{'z-index': index}">
+            </playing-card>
+        </div>
+    </div>
+
+    <ng-template #loadingCardTemplate>
+        <p>Loading cards...</p>
+    </ng-template>
+
     @for(takenCard of gameModel.ringStack; track takenCard; let index = $index) {
-        <taken-card [takenCardIndex]="index" [takenCards]="gameModel.ringStack"></taken-card>
+    <taken-card [takenCardIndex]="index" [takenCards]="gameModel.ringStack"
+        [ngStyle]="{'left.%': gameModel.playedCardPositions[index].xCoord,'top.%': gameModel.playedCardPositions[index].yCoord,'transform': 'translate(' + gameModel.playedCardPositions[index].translation + ')' + 'rotate(' + gameModel.playedCardPositions[index].angle + 'deg) '}">
+    </taken-card>
     }
+
+    <div class="buttons">
+        <button mat-fab color="primary" aria-label="Example icon button with a delete icon"
+            [ngClass]="{'add-player': true, 'disNone': myselfExists}" (click)="openDialog()">
+            <mat-icon>add</mat-icon>
+        </button>
+
+        <button mat-fab color="primary" aria-label="Example icon button with a delete icon"
+            [ngClass]="{'show-hide-players': true, 'disNone': playersHidden}" (click)="showHidePlayers()">
+            <mat-icon>visibility</mat-icon>
+        </button>
+
+        <button mat-fab color="primary" aria-label="Example icon button with a delete icon"
+            [ngClass]="{'show-hide-players': true, 'disNone': !playersHidden}" (click)="showHidePlayers()">
+            <mat-icon>visibility_off</mat-icon>
+        </button>
+    </div>
+
+    <game-info></game-info>
 </div>

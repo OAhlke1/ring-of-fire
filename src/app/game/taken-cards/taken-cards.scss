@@ -11,7 +11,6 @@
     img {
         width: 100%;
         height: auto;
-        @include position($pos: absolute, $t: 0, $l: 0);
         z-index: 1;
     }
 
@@ -20,11 +19,6 @@
             animation: scaleBigger linear 0.125s;
             transform: scale(1.1);
         }
-    }
-
-    &.pick-card {
-        /* animation: make-card-even-bigger 125ms ease-in-out;
-        transform: scale(1.5); */
     }
 }
 

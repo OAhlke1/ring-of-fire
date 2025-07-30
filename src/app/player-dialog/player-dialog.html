@@ -1,0 +1,11 @@
+<ol>
+  <li>
+    <mat-form-field>
+      <mat-label>What's your name?</mat-label>
+      <input matInput [(ngModel)]="name" />
+    </mat-form-field>
+  </li>
+  <li>
+    <button type="button" matButton="elevated" (click)="submit($event)" [ngClass]="{'submitting-button': true}">Add player</button>
+  </li>
+</ol>
