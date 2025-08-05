@@ -1,12 +1,12 @@
 <div class="field">
-    <div *ngIf="!fbs.loadingPlayers; else loadingPlayerTemplate"
+    <div *ngIf="!gameModel.loadingPlayers; else loadingPlayerTemplate"
         [ngClass]="{'player-bar': true, 'players-shown': playersShown && !playersHidden, 'players-hidden': !playersShown && playersHidden}">
-        @if(gameModel.playersArray.length > 0){
+        @if(gameModel.playersArray && gameModel.playersArray.length > 0){
             @for(player of gameModel.playersArray; track player; let index = $index) {
             <app-player [name]="gameModel.playersArray[index].name"
                 [backgroundColor]="gameModel.playersArray[index].isActive ? 'red' : player.bgColor"
-                [ngClass]="{'disNone': !gameModel.playersArray[index].onlineStatus, 'is-active': gameModel.playersArray[index].isActive}"
-                (click)="setActive(index)">
+                [ngClass]="{'is-active': gameModel.playersArray && gameModel.playersArray[index].isActive}"
+                >
             </app-player>
             }
         }
@@ -38,8 +38,12 @@
     }
 
     <div class="buttons">
+        <done-button
+         (click)="gameModel.setNewPlayerActive()"
+        >
+        </done-button>
         <button mat-fab color="primary" aria-label="Example icon button with a delete icon"
-            [ngClass]="{'add-player': true, 'disNone': myselfExists}" (click)="openDialog()">
+            [ngClass]="{'add-player': true, 'disNone': gameModel.myselfExists}" (click)="gameModel.openDialog()">
             <mat-icon>add</mat-icon>
         </button>
 
@@ -52,7 +56,7 @@
             [ngClass]="{'show-hide-players': true, 'disNone': !playersHidden}" (click)="showHidePlayers()">
             <mat-icon>visibility_off</mat-icon>
         </button>
+        <game-info></game-info>
     </div>
 
-    <game-info></game-info>
 </div>

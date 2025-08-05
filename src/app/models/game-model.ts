@@ -1,6 +1,26 @@
-import { ChangeDetectorRef, Injectable } from '@angular/core';
+import { ChangeDetectorRef, Injectable, NgZone } from '@angular/core';
+import { initializeApp } from "firebase/app";
 import { FirebaseService, playerObjectLiteral } from './firebase';
 import { Player } from '../game/player/player';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDialog } from '@angular/material/dialog';
+import { PlayerDialog } from '../player-dialog/player-dialog';
+import { getFirestore, doc, addDoc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot, DocumentSnapshot, collection, arrayRemove } from "firebase/firestore";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyD9x5VAZ4j5QuRsKz8vNQE9XHWHJ3_W2as",
+    authDomain: "ring-of-fire-d9f15.firebaseapp.com",
+    projectId: "ring-of-fire-d9f15",
+    storageBucket: "ring-of-fire-d9f15.firebasestorage.app",
+    messagingSenderId: "1018102590409",
+    appId: "1:1018102590409:web:87cb1254a8ff75bfcd9618",
+    measurementId: "G-GEBPK7VCTK"
+};
+
+// Firebase App initialisieren
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 @Injectable({
     providedIn: 'root'
@@ -12,13 +32,22 @@ export class GameModel {
     public playedCardPositions: { xCoord: number, yCoord: number, angle: number, translation: string }[] = [];
     public currentPlayer: number = 0;
     public cardBackLink: string = '/assets/images/cards/card_cover.png';
-    public playersArray!:playerObjectLiteral[];
+    public playersArray: playerObjectLiteral[] = [];
     public onlineCount = 0;
     public loadingCards: boolean = true;
-    public activePlayer!:playerObjectLiteral;
-    public mySelf!:playerObjectLiteral;
+    public activePlayer!: playerObjectLiteral;
+    public mySelf!: playerObjectLiteral;
+    public myselfIndex: number = -1;
+    public docRefPlayers = doc(db, 'game', 'players');
+    public docRefCards = doc(db, 'game', 'cards');
+    public loadingPlayers: boolean = true;
+    public playerId: any = localStorage['player-id'] ? localStorage.getItem('player-id') :  "";
+    public cardsCanBeClicked: boolean = true;
+    dialogRef!: any;
+    myselfExists: boolean = false;
+    playerDialog!: PlayerDialog;
 
-    constructor(private fbs: FirebaseService) {
+    constructor(private fbs: FirebaseService, public dialog: MatDialog, public ngz: NgZone) {
         for (let i = 0; i < 52; i++) {
             if (i % 8 === 0) {
                 this.playedCardPositions.push({
@@ -78,14 +107,13 @@ export class GameModel {
                 })
             }
         }
-        this.fbs.getPlayers();
-        this.listenToPlayers();
+        this.setPlayersSnap();
+        this.setCardsSnap();
     }
 
-    async getCards() {
+    async receiveCards() {
         let cards = await this.fbs.getCards();
         if (cards.length === 0) {
-            console.log('new cards');
             for (let i = 1; i < 14; i++) {
                 this.stack.push('assets/images/cards/hearts_' + `${i}.png`);
                 this.stack.push('assets/images/cards/ace_' + `${i}.png`);
@@ -93,7 +121,7 @@ export class GameModel {
                 this.stack.push('assets/images/cards/diamonds_' + `${i}.png`);
             }
             await this.shuffleStack(this.stack);
-        }else {
+        } else {
             this.stack = cards;
             this.fbs.cardStack = cards;
             this.loadingCards = false;
@@ -105,35 +133,32 @@ export class GameModel {
         while (currentIndex != 0) {
             let randomIndex = Math.floor(Math.random() * currentIndex);
             currentIndex--;
-            [array[currentIndex], array[randomIndex]] = [
-                array[randomIndex], array[currentIndex]];
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
         }
         try {
             await this.fbs.postCards(array);
             this.loadingCards = false;
         } catch (error) {
-            console.error('Fehler beim Posten der Karten:', error);
             this.loadingCards = false;
         }
     }
 
-    listenToPlayers() {
-        this.fbs.listenToPlayers((players: any[]) => {
-            this.playersArray = [...players];
-            this.countOnline();
-        });
-    }
-
-    countOnline() {
-        for (let player of this.playersArray) {
-            if (player.onlineStatus) { this.onlineCount++; }
+    setPlayerIndices() {
+        for (let i = 0; i < this.playersArray.length; i++) {
+            this.playersArray[i].playerIndex = i;
         }
         this.getActivePlayer();
     }
 
+    setPlayerIndicesAtUnload() {
+        for (let i = 0; i < this.playersArray.length; i++) {
+            this.playersArray[i].playerIndex = i;
+        }
+    }
+
     getActivePlayer() {
-        for(let i=0; i<this.playersArray.length; i++) {
-            if(this.playersArray[i].isActive) {
+        for (let i = 0; i < this.playersArray.length; i++) {
+            if (this.playersArray[i].isActive) {
                 this.activePlayer = this.playersArray[i];
                 this.fbs.activePlayer = this.activePlayer;
             }
@@ -143,4 +168,131 @@ export class GameModel {
     actualizePlayers(players: playerObjectLiteral[]) {
         this.playersArray = players;
     }
+
+    openDialog(): void {
+        const dialogRef = this.dialog.open(PlayerDialog);
+        dialogRef.afterClosed().subscribe(result => {
+            if (result.playerName && !this.mySelf) {
+                this.playerId = `${Math.floor(100*Math.random())}${result.playerName[0]}${result.playerName[1]}${result.playerName[2]}`;
+                localStorage.setItem('player-id', this.playerId);
+                let newPlayer = {
+                    name: result.playerName,
+                    playerIndex: this.playersArray ? this.playersArray.length : 0,
+                    bgColor: `rgba(${Math.floor(255 * Math.random())}, ${Math.floor(255 * Math.random())}, ${Math.floor(255 * Math.random())}, ${50 * Math.random()})`,
+                    isActive: this.playersArray && this.playersArray.length === 0 ? true : false,
+                    playerId: this.playerId
+                }
+                this.playersArray.push(newPlayer);
+                this.mySelf = newPlayer;
+                this.myselfIndex = newPlayer.playerIndex;
+                this.myselfExists = true;
+                this.postPlayers(this.playersArray);
+            } else if (!result || !result.classListCopy || !result.playerName) {
+                return;
+            }
+        });
+    }
+
+    async setPlayersSnap() {
+        onSnapshot(this.docRefPlayers, (docSnap: DocumentSnapshot) => {
+            if (docSnap.exists()) {
+                this.receivePlayers();
+                return;
+            } else {
+                this.playersArray = [];
+                return;
+            }
+        });
+    }
+
+    async receivePlayers() {
+        const players = await this.getPlayers();
+        if (players) {
+            this.ngz.run(() => {
+                if (players) {
+                    this.playersArray = players;
+                }
+                if (this.playersArray.length > 0) { this.setMyselfIndex(); }             
+                this.getNewMyself();
+            })
+        }else { this.playersArray = []; }
+    }
+
+    async getPlayers(): Promise<any[]> {
+        return new Promise(async (res, rej) => {
+            const docSnap = await getDoc(this.docRefPlayers);
+            if (docSnap) {
+                const data = docSnap.data() as { players: playerObjectLiteral[] };
+                this.loadingPlayers = false;
+                res(data.players);
+            } else {
+                rej(new Error('Keine anderen Saufkumpanen vorhanden'));
+            }
+        })
+    }
+
+    setMyselfIndex() {
+        if (this.mySelf) {
+            this.myselfIndex = this.playersArray.length - 1;
+        }
+    }
+
+    async postPlayers(players: any[]) {
+        await updateDoc(this.docRefPlayers, {
+            players: this.playersArray
+        });
+    }
+
+    async removePlayer(index: number) {
+        this.playersArray.splice(index, 1);
+        this.setPlayerIndicesAtUnload();
+        this.setNewPlayerActive();
+        // localStorage.removeItem('player-id');
+        await this.postPlayers(this.playersArray);
+        return;
+    }
+
+    setNewPlayerActive() {
+        if (this.mySelf && this.mySelf.isActive) {
+            let indexActive = 0;
+            for (let i = 0; i < this.playersArray.length; i++) {
+                if (this.playersArray[i].isActive) {
+                    indexActive = i;
+                    break;
+                }
+            }
+            let indexNewActive = indexActive + 1 === this.playersArray.length ? 0 : indexActive + 1;
+            this.playersArray[indexActive].isActive = false;
+            this.playersArray[indexNewActive].isActive = true;
+            this.postPlayers(this.playersArray);
+        }
+    }
+
+    getIndexActivePlayer(): any {
+        for (let player of this.playersArray) {
+            if (player.isActive) {
+                return player.playerIndex;
+            }
+        }
+    }
+
+    getNewMyself() {
+        for(let player of this.playersArray) {
+            if(player.playerId === this.playerId) {
+                this.mySelf = player;
+                this.cardsCanBeClicked = true;
+            }
+        }
+    }
+
+  async setCardsSnap() {
+    onSnapshot(this.docRefCards, (docSnap: DocumentSnapshot) => {
+      if (docSnap.exists() && this.mySelf && !this.mySelf.isActive) {
+        const data = docSnap.data() as { cards: string[] };
+        const lastCardFromStack:NodeListOf<HTMLElement> = document.querySelectorAll<HTMLElement>('playing-card .card-cont-inner');
+        console.log('onSnapshot');
+        lastCardFromStack[lastCardFromStack.length-1].click();
+      }
+    });
+  }
 }

@@ -75,7 +75,7 @@
     }
 
     .buttons {
-        @include disFlex($aI: center, $jC: space-evenly);
+        @include disFlex($aI: center, $jC: space-evenly, $cG: 15px);
         @include position($pos: absolute, $r: 0, $b: 3%);
         width: 15vw;
         height: fit-content;

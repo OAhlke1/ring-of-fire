@@ -22,7 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export type playerObjectLiteral = { name: string, onlineStatus: boolean, isActive: boolean, bgColor: string };
+export type playerObjectLiteral = { name: string, playerIndex: number, isActive: boolean, bgColor: string, playerId: string };
 
 @Injectable({
   providedIn: 'root'
@@ -30,51 +30,14 @@ export type playerObjectLiteral = { name: string, onlineStatus: boolean, isActiv
 export class FirebaseService {
   private game!: Game;
   private player!: Player;
-  private docRefPlayers = doc(db, 'game', 'players');
+  players:any[] = [];
+  public docRefPlayers = doc(db, 'game', 'players');
   private docRefCards = doc(db, 'game', 'cards');
   public cardStack:string[] = [];
   public activePlayer!:playerObjectLiteral;
-  public loadingPlayers:boolean = true;
   public card!:Card;
 
-  constructor() {
-    this.setCardsSnap();
-  }
-
-  async getPlayers(): Promise<playerObjectLiteral[]> {
-    const docSnap = await getDoc(this.docRefPlayers);
-    if (docSnap.exists()) {
-      const data = docSnap.data() as { players: playerObjectLiteral[] };
-      this.loadingPlayers = false;
-      return data.players ?? [];
-    } else {
-      return [];
-    }
-  }
-
-  async postNewPlayer(newPlayer: playerObjectLiteral): Promise<void> {
-    console.log('postNewPlayer!');
-    await updateDoc(this.docRefPlayers, {
-      players: arrayUnion(newPlayer)
-    });
-  }
-
-  listenToPlayers(callback: (players: playerObjectLiteral[]) => void): void {
-    onSnapshot(this.docRefPlayers, (docSnap: DocumentSnapshot) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data() as { players: playerObjectLiteral[] };
-        callback(data.players ?? []);
-      } else {
-        callback([]);
-      }
-    });
-  }
-
-  async postPlayers(players: playerObjectLiteral[]) {
-    await updateDoc(this.docRefPlayers, {
-      players: players
-    });
-  }
+  constructor() { }
 
   async getCards(): Promise<string[]> {
     try {
@@ -97,13 +60,5 @@ export class FirebaseService {
     } catch (e) {
       console.error("Fehler beim Schreiben des Dokuments: ", e);
     }
-  }
-
-  setCardsSnap() {
-    onSnapshot(this.docRefCards, (docSnap: DocumentSnapshot) => {
-      if (docSnap.exists() && this.activePlayer && this.activePlayer.name != this.player.mySelf) {
-        this.card.takeCard();
-      }
-    })
   }
 }

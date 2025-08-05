@@ -3,12 +3,13 @@ import { NgClass, NgStyle } from '@angular/common';
 import { GameModel } from '../../models/game-model';
 import { FirebaseService } from '../../models/firebase';
 import { Player } from '../player/player';
+import { getFirestore, doc, addDoc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot, DocumentSnapshot, collection, arrayRemove } from "firebase/firestore";
 
 
 @Component({
   standalone: true,
   selector: 'playing-card',
-  imports: [NgClass, Player],
+  imports: [NgClass],
   templateUrl: './card.html',
   styleUrls: ['./card.scss']
 })
@@ -38,8 +39,20 @@ export class Card {
     this.notPicked = gameModel.stack.length - 1 === this.cardIndex ? true : false;
   }
 
+  clickCard() {
+    if(this.gameModel.mySelf && this.gameModel.mySelf.isActive && this.gameModel.cardsCanBeClicked) {
+      this.gameModel.cardsCanBeClicked = false;
+      this.takeCard();
+      this.checkIfCardRotates();
+    }else if(this.gameModel.mySelf && !this.gameModel.mySelf.isActive && this.gameModel.cardsCanBeClicked) {
+      this.gameModel.cardsCanBeClicked = false;
+      this.takeCardAutomatically();
+      this.checkIfCardRotatesAutomatically();
+    }
+  }
+
   takeCard() {
-    if (this.gameModel.activePlayer.name === this.gameModel.mySelf.name) {
+    if (this.gameModel.mySelf && this.gameModel.mySelf.isActive) {
       if (this.cardIndex === this.gameModel.stack.length - 1) {
         if (!this.takeCardAnimation) {
           this.notPicked = false;
@@ -54,7 +67,30 @@ export class Card {
   }
 
   checkIfCardRotates() {
-    if (this.gameModel.activePlayer.name === this.gameModel.mySelf.name) {
+    if (this.gameModel.mySelf && this.gameModel.mySelf.isActive) {
+      if (this.deg === 0) {
+        this.intervalCode = setInterval(() => { this.rotateCard() }, this.frequency);
+      }
+    }
+  }
+
+  takeCardAutomatically() {
+    if (this.gameModel.mySelf && !this.gameModel.mySelf.isActive) {
+      if (this.cardIndex === this.gameModel.stack.length - 1) {
+        if (!this.takeCardAnimation) {
+          this.notPicked = false;
+          this.takeCardAnimation = true;
+        } else if (this.takeCardAnimation) {
+          this.notPicked = true;
+          this.takeCardAnimation = false;
+        }
+        this.cursorOverCard = false;
+      }
+    }
+  }
+
+  checkIfCardRotatesAutomatically() {
+    if (this.gameModel.mySelf && !this.gameModel.mySelf.isActive) {
       if (this.deg === 0) {
         this.intervalCode = setInterval(() => { this.rotateCard() }, this.frequency);
       }
@@ -69,10 +105,9 @@ export class Card {
       if (this.deg === 90) {
         if (!this.cardCoverHidden && this.cardFaceHidden) {
           this.cardCoverHidden = true;
-          this.cardFaceHidden = false
-          this.cdr.detectChanges();
+          this.cardFaceHidden = false;
         } else if (this.cardCoverHidden && !this.cardFaceHidden) {
-          this.cardCoverHidden = false
+          this.cardCoverHidden = false;
           this.cardFaceHidden = true;
           this.cdr.detectChanges();
         }
@@ -87,9 +122,10 @@ export class Card {
     }
   }
 
-  removeCardFromStack() {
+  async removeCardFromStack() {
     this.ringStack.push(this.cardStack[this.cardIndex]);
     this.cardStack.pop();
+    await this.fbs.postCards(this.cardStack);
   }
 
   cardHoverEffectOn() {
