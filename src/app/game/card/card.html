@@ -5,7 +5,7 @@
     >
     <img
         #cardFace
-        [src]="cardFrontBack.frontUrl" alt=""
+        [src]="gameModel.stack[gameModel.cardCount]" alt=""
         [ngClass]="{'cardFace': true, 'hidden': cardFaceHidden}"
     >
 </div>

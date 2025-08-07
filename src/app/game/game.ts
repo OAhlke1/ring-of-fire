@@ -9,6 +9,7 @@ import { MatCardModule } from '@angular/material/card';
 import { GameInfo } from "./game-info/game-info";
 import { DoneButton } from './done-button/done-button';
 import { MatIcon } from '@angular/material/icon';
+import { getFirestore, doc, addDoc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot, DocumentSnapshot, collection, arrayRemove } from "firebase/firestore";
 
 @Component({
   standalone: true,
@@ -26,12 +27,16 @@ export class Game implements OnInit {
   changeIntervalId!: any;
   player!:Player;
   doneButton!:DoneButton;
+  card!: Card;
 
   constructor(public gameModel: GameModel, public fbs: FirebaseService, private cdr: ChangeDetectorRef) {
+    // this.setCardsSnap();
   }
   
   async ngOnInit() {
     window.addEventListener('beforeunload', ()=>{ this.gameModel.removePlayer(this.gameModel.mySelf.playerIndex); });
+    window.addEventListener('reload', ()=>{ this.gameModel.postPlayers([]); });
+    window.addEventListener('reload', ()=>{ this.fbs.postCards([]); });
     await this.gameModel.receivePlayers();
     await this.gameModel.receiveCards();
     this.changeDetection();
@@ -45,7 +50,7 @@ export class Game implements OnInit {
   changeDetection() {
     this.changeIntervalId = setInterval(()=>{
       this.cdr.detectChanges();
-    }, 750);
+    }, 10);
   }
 
   showHidePlayers() {
@@ -59,5 +64,17 @@ export class Game implements OnInit {
       this.playersShownAtFirstTime = false;
       this.playersHidden = true;
     }
+  }
+
+  async setCardsSnap() {
+    onSnapshot(this.gameModel.docRefCards, (docSnap: DocumentSnapshot) => {
+      if (docSnap.exists() && this.gameModel.mySelf && !this.gameModel.mySelf.isActive && !this.gameModel.takeNoMoreCards) {
+        console.log('card-snap:', this.gameModel.takeNoMoreCards);
+        const data = docSnap.data() as { cards: string[] };
+        const lastCardFromStack: NodeListOf<HTMLElement> = document.querySelectorAll<HTMLElement>('playing-card .card-cont-inner');
+        this.card.takeCardAutomatically();
+        this.card.checkIfCardRotatesAutomatically();
+      }
+    });
   }
 }

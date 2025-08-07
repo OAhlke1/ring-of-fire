@@ -1,9 +1,6 @@
 import { ChangeDetectorRef, Injectable, NgZone } from '@angular/core';
 import { initializeApp } from "firebase/app";
 import { FirebaseService, playerObjectLiteral } from './firebase';
-import { Player } from '../game/player/player';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { PlayerDialog } from '../player-dialog/player-dialog';
 import { getFirestore, doc, addDoc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot, DocumentSnapshot, collection, arrayRemove } from "firebase/firestore";
@@ -18,7 +15,6 @@ const firebaseConfig = {
     measurementId: "G-GEBPK7VCTK"
 };
 
-// Firebase App initialisieren
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -41,8 +37,12 @@ export class GameModel {
     public docRefPlayers = doc(db, 'game', 'players');
     public docRefCards = doc(db, 'game', 'cards');
     public loadingPlayers: boolean = true;
-    public playerId: any = localStorage['player-id'] ? localStorage.getItem('player-id') :  "";
+    public playerId: any = localStorage['player-id'] ? localStorage.getItem('player-id') : "";
     public cardsCanBeClicked: boolean = true;
+    public takeNoMoreCards!: boolean;
+    public cardTakenArray: boolean[] = [];
+    public deg = 0;
+    public cardCount: number = 0;
     dialogRef!: any;
     myselfExists: boolean = false;
     playerDialog!: PlayerDialog;
@@ -108,7 +108,6 @@ export class GameModel {
             }
         }
         this.setPlayersSnap();
-        this.setCardsSnap();
     }
 
     async receiveCards() {
@@ -128,6 +127,13 @@ export class GameModel {
         }
     }
 
+    setCardTakenArray(value:boolean) {
+        for(let i=0; i<this.stack.length; i++) {
+            this.cardTakenArray.push(value);
+        }
+        this.cardTakenArray[this.cardTakenArray.length-1] = false;
+    }
+
     async shuffleStack(array: string[]) {
         let currentIndex = array.length;
         while (currentIndex != 0) {
@@ -141,6 +147,7 @@ export class GameModel {
         } catch (error) {
             this.loadingCards = false;
         }
+        this.setCardTakenArray(true);
     }
 
     setPlayerIndices() {
@@ -173,7 +180,7 @@ export class GameModel {
         const dialogRef = this.dialog.open(PlayerDialog);
         dialogRef.afterClosed().subscribe(result => {
             if (result.playerName && !this.mySelf) {
-                this.playerId = `${Math.floor(100*Math.random())}${result.playerName[0]}${result.playerName[1]}${result.playerName[2]}`;
+                this.playerId = `${Math.floor(100 * Math.random())}${result.playerName[0]}${result.playerName[1]}${result.playerName[2]}`;
                 localStorage.setItem('player-id', this.playerId);
                 let newPlayer = {
                     name: result.playerName,
@@ -206,16 +213,18 @@ export class GameModel {
     }
 
     async receivePlayers() {
+        this.takeNoMoreCards = false;
+        console.log(this.takeNoMoreCards);
         const players = await this.getPlayers();
         if (players) {
             this.ngz.run(() => {
                 if (players) {
                     this.playersArray = players;
                 }
-                if (this.playersArray.length > 0) { this.setMyselfIndex(); }             
+                if (this.playersArray.length > 0) { this.setMyselfIndex(); }
                 this.getNewMyself();
             })
-        }else { this.playersArray = []; }
+        } else { this.playersArray = []; }
     }
 
     async getPlayers(): Promise<any[]> {
@@ -277,22 +286,13 @@ export class GameModel {
     }
 
     getNewMyself() {
-        for(let player of this.playersArray) {
-            if(player.playerId === this.playerId) {
+        for (let player of this.playersArray) {
+            if (player.playerId === this.playerId) {
                 this.mySelf = player;
-                this.cardsCanBeClicked = true;
+                if (this.mySelf.isActive) {
+                    this.cardsCanBeClicked = true;
+                }
             }
         }
     }
-
-  async setCardsSnap() {
-    onSnapshot(this.docRefCards, (docSnap: DocumentSnapshot) => {
-      if (docSnap.exists() && this.mySelf && !this.mySelf.isActive) {
-        const data = docSnap.data() as { cards: string[] };
-        const lastCardFromStack:NodeListOf<HTMLElement> = document.querySelectorAll<HTMLElement>('playing-card .card-cont-inner');
-        console.log('onSnapshot');
-        lastCardFromStack[lastCardFromStack.length-1].click();
-      }
-    });
-  }
 }
