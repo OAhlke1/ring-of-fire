@@ -30,12 +30,12 @@ export type playerObjectLiteral = { name: string, playerIndex: number, isActive:
 export class FirebaseService {
   private game!: Game;
   private player!: Player;
-  players:any[] = [];
+  players: any[] = [];
   public docRefPlayers = doc(db, 'game', 'players');
   private docRefCards = doc(db, 'game', 'cards');
-  public cardStack:string[] = [];
-  public activePlayer!:playerObjectLiteral;
-  public card!:Card;
+  public cardStack: string[] = [];
+  public activePlayer!: playerObjectLiteral;
+  public card!: Card;
 
   constructor() { }
 
@@ -60,5 +60,27 @@ export class FirebaseService {
     } catch (e) {
       console.error("Fehler beim Schreiben des Dokuments: ", e);
     }
+  }
+
+  /* TRIAL ONLY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+  async getPlayers(): Promise<any[]> {
+    return new Promise(async (res, rej) => {
+      const docSnap = await getDoc(this.docRefPlayers);
+      if (docSnap) {
+        const data = docSnap.data() as { players: playerObjectLiteral[] };
+        // this.loadingPlayers = false;
+        res(data.players);
+      } else {
+        rej(new Error('Keine anderen Saufkumpanen vorhanden'));
+      }
+    })
+  }
+
+  /* TRIAL ONLY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+  async postPlayers(players: any[]) {
+    await updateDoc(this.docRefPlayers, {
+      players: players
+    });
+    console.log(players);
   }
 }

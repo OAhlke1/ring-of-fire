@@ -1,5 +1,5 @@
 <div class="done-button-inner"
-         [ngClass]="{'new-active': gameModel.mySelf && gameModel.mySelf.isActive, 'disNone': gameModel.mySelf && !gameModel.mySelf.isActive}"
+         [ngClass]="{'new-active': gameModel.showDoneButton && gameModel.showDoneButton, 'disNone': gameModel.showDoneButton && !gameModel.showDoneButton}"
     >
     <p>Done!</p>
 </div>

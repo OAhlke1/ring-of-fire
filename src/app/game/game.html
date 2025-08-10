@@ -20,7 +20,7 @@
         <!-- Nur anzeigen, wenn die Karten geladen sind -->
         <div *ngFor="let playingCard of gameModel.stack; let index = index">
             <playing-card [ngClass]="{'last-card': index === gameModel.stack.length-1}" [cardStack]="gameModel.stack"
-                [cardPositions]="gameModel.playedCardPositions" [cardIndex]="index" [ringStack]="gameModel.ringStack"
+                [cardPositions]="gameModel.playedCardPositions" [cardIndex]="index"
                 [cardFrontBack]="{backUrl: gameModel.cardBackLink, frontUrl: playingCard}"
                 [ngStyle]="{'z-index': index}">
             </playing-card>
@@ -31,8 +31,8 @@
         <p>Loading cards...</p>
     </ng-template>
 
-    @for(takenCard of gameModel.ringStack; track takenCard; let index = $index) {
-    <taken-card [takenCardIndex]="index" [takenCards]="gameModel.ringStack"
+    @for(takenCard of gameModel.takenCardsArray; track takenCard+index; let index = $index) {
+    <taken-card [takenCardIndex]="index" [takenCards]="gameModel.takenCardsArray"
         [ngStyle]="{'left.%': gameModel.playedCardPositions[index].xCoord,'top.%': gameModel.playedCardPositions[index].yCoord,'transform': 'translate(' + gameModel.playedCardPositions[index].translation + ')' + 'rotate(' + gameModel.playedCardPositions[index].angle + 'deg) '}">
     </taken-card>
     }
@@ -42,10 +42,10 @@
          (click)="gameModel.setNewPlayerActive()"
         >
         </done-button>
-        <button mat-fab color="primary" aria-label="Example icon button with a delete icon"
+        <!-- <button mat-fab color="primary" aria-label="Example icon button with a delete icon"
             [ngClass]="{'add-player': true, 'disNone': gameModel.myselfExists}" (click)="gameModel.openDialog()">
             <mat-icon>add</mat-icon>
-        </button>
+        </button> -->
 
         <button mat-fab color="primary" aria-label="Example icon button with a delete icon"
             [ngClass]="{'show-hide-players': true, 'disNone': playersHidden}" (click)="showHidePlayers()">

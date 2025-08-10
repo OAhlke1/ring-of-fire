@@ -4,6 +4,7 @@ import { FirebaseService, playerObjectLiteral } from './firebase';
 import { MatDialog } from '@angular/material/dialog';
 import { PlayerDialog } from '../player-dialog/player-dialog';
 import { getFirestore, doc, addDoc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot, DocumentSnapshot, collection, arrayRemove } from "firebase/firestore";
+import { Myself } from '../shared/myself';
 
 const firebaseConfig = {
     apiKey: "AIzaSyD9x5VAZ4j5QuRsKz8vNQE9XHWHJ3_W2as",
@@ -24,7 +25,8 @@ const db = getFirestore(app);
 export class GameModel {
     public players: string[] = [];
     public stack: string[] = [];
-    public ringStack: any[] = [];
+    public takenCardsArray: string[] = [];
+    public takenCardsArrayForRendering: string[] = [];
     public playedCardPositions: { xCoord: number, yCoord: number, angle: number, translation: string }[] = [];
     public currentPlayer: number = 0;
     public cardBackLink: string = '/assets/images/cards/card_cover.png';
@@ -36,18 +38,24 @@ export class GameModel {
     public myselfIndex: number = -1;
     public docRefPlayers = doc(db, 'game', 'players');
     public docRefCards = doc(db, 'game', 'cards');
+    public docRefTakenCards = doc(db, 'game', 'taken-cards');
     public loadingPlayers: boolean = true;
     public playerId: any = localStorage['player-id'] ? localStorage.getItem('player-id') : "";
     public cardsCanBeClicked: boolean = true;
-    public takeNoMoreCards!: boolean;
-    public cardTakenArray: boolean[] = [];
+    public takeNoMoreCards: boolean = true;
     public deg = 0;
     public cardCount: number = 0;
+    public showDoneButton: boolean = true;
+    public hasInteracted: boolean = false;
+
     dialogRef!: any;
     myselfExists: boolean = false;
     playerDialog!: PlayerDialog;
 
-    constructor(private fbs: FirebaseService, public dialog: MatDialog, public ngz: NgZone) {
+    constructor(private fbs: FirebaseService, public dialog: MatDialog, public ngz: NgZone, public ms: Myself) {
+        this.mySelf = ms.myselfObject;
+        this.showDoneButton = this.ms.myselfObject.isActive ? true : false;
+        console.log('donebuttonsate:', this.showDoneButton);
         for (let i = 0; i < 52; i++) {
             if (i % 8 === 0) {
                 this.playedCardPositions.push({
@@ -107,7 +115,15 @@ export class GameModel {
                 })
             }
         }
+        this.showHideDoneButton();
         this.setPlayersSnap();
+        this.setTakenCardsSnap();
+    }
+
+    showHideDoneButton() {
+        if (this.mySelf.isActive) {
+            this.showDoneButton = true;
+        } else { this.showDoneButton = false; }
     }
 
     async receiveCards() {
@@ -121,18 +137,19 @@ export class GameModel {
             }
             await this.shuffleStack(this.stack);
         } else {
+            // this.takenCardsArray.push(this.stack[this.stack.length-1]);
             this.stack = cards;
             this.fbs.cardStack = cards;
             this.loadingCards = false;
         }
     }
 
-    setCardTakenArray(value:boolean) {
-        for(let i=0; i<this.stack.length; i++) {
+    /* setCardTakenArray(value: boolean) {
+        for (let i = 0; i < this.stack.length; i++) {
             this.cardTakenArray.push(value);
         }
-        this.cardTakenArray[this.cardTakenArray.length-1] = false;
-    }
+        this.cardTakenArray[this.cardTakenArray.length - 1] = false;
+    } */
 
     async shuffleStack(array: string[]) {
         let currentIndex = array.length;
@@ -147,7 +164,7 @@ export class GameModel {
         } catch (error) {
             this.loadingCards = false;
         }
-        this.setCardTakenArray(true);
+        // this.setCardTakenArray(true);
     }
 
     setPlayerIndices() {
@@ -212,19 +229,28 @@ export class GameModel {
         });
     }
 
+    async setTakenCardsSnap() {
+        onSnapshot(this.docRefTakenCards, (docSnap: DocumentSnapshot) => {
+            if (docSnap.exists()) {
+                this.receiveTakenCards();
+                return;
+            } else {
+                this.takenCardsArray = [];
+                return;
+            }
+        });
+    }
+
     async receivePlayers() {
-        this.takeNoMoreCards = false;
-        console.log(this.takeNoMoreCards);
         const players = await this.getPlayers();
         if (players) {
             this.ngz.run(() => {
-                if (players) {
-                    this.playersArray = players;
-                }
+                if (players) { this.playersArray = players; }
                 if (this.playersArray.length > 0) { this.setMyselfIndex(); }
-                this.getNewMyself();
+                this.checkIfIAmActive();
             })
         } else { this.playersArray = []; }
+        // this.takeNoMoreCards = false;
     }
 
     async getPlayers(): Promise<any[]> {
@@ -237,6 +263,38 @@ export class GameModel {
             } else {
                 rej(new Error('Keine anderen Saufkumpanen vorhanden'));
             }
+        })
+    }
+
+    async receiveTakenCards() {
+        const takenCards = await this.getTakenCards();
+        if (takenCards) {
+            this.ngz.run(() => {
+                if (takenCards.length > 0) {
+                    this.takenCardsArray = takenCards;
+                    this.takenCardsArrayForRendering = takenCards;
+                }
+            })
+        } else { this.takenCardsArray = []; }
+        // this.takeNoMoreCards = false;
+    }
+
+    async getTakenCards(): Promise<any[]> {
+        return new Promise(async (res, rej) => {
+            const docSnap = await getDoc(this.docRefTakenCards);
+            if (docSnap) {
+                const data = docSnap.data() as { takenCards: string[] };
+                res(data.takenCards);
+            } else {
+                rej([]);
+            }
+        })
+    }
+
+    async postTakenCards() {
+        // if(this.stack.length + this.takenCardsArray.length > 52) { this.takenCardsArray.splice(this.takenCardsArray.length - 1, 1); }
+        await updateDoc(this.docRefTakenCards, {
+            takenCards: this.takenCardsArray
         })
     }
 
@@ -264,6 +322,8 @@ export class GameModel {
     setNewPlayerActive() {
         if (this.mySelf && this.mySelf.isActive) {
             let indexActive = 0;
+            this.mySelf.isActive = false;
+            this.takeNoMoreCards = false;
             for (let i = 0; i < this.playersArray.length; i++) {
                 if (this.playersArray[i].isActive) {
                     indexActive = i;
@@ -274,6 +334,7 @@ export class GameModel {
             this.playersArray[indexActive].isActive = false;
             this.playersArray[indexNewActive].isActive = true;
             this.postPlayers(this.playersArray);
+            console.log(this.playersArray, this.mySelf.isActive);
         }
     }
 
@@ -285,13 +346,15 @@ export class GameModel {
         }
     }
 
-    getNewMyself() {
+    checkIfIAmActive() {
         for (let player of this.playersArray) {
-            if (player.playerId === this.playerId) {
-                this.mySelf = player;
-                if (this.mySelf.isActive) {
-                    this.cardsCanBeClicked = true;
-                }
+            if (this.playersArray[this.mySelf.playerIndex].isActive) {
+                this.mySelf.isActive = true;
+                this.cardsCanBeClicked = true;
+                this.showDoneButton = true;
+            }else {
+                this.mySelf.isActive = false;
+                this.showDoneButton = false;
             }
         }
     }

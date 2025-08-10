@@ -29,9 +29,7 @@ export class Game implements OnInit {
   doneButton!:DoneButton;
   card!: Card;
 
-  constructor(public gameModel: GameModel, public fbs: FirebaseService, private cdr: ChangeDetectorRef) {
-    // this.setCardsSnap();
-  }
+  constructor(public gameModel: GameModel, public fbs: FirebaseService, private cdr: ChangeDetectorRef) { }
   
   async ngOnInit() {
     window.addEventListener('beforeunload', ()=>{ this.gameModel.removePlayer(this.gameModel.mySelf.playerIndex); });
@@ -39,6 +37,7 @@ export class Game implements OnInit {
     window.addEventListener('reload', ()=>{ this.fbs.postCards([]); });
     await this.gameModel.receivePlayers();
     await this.gameModel.receiveCards();
+    await this.gameModel.receiveTakenCards();
     this.changeDetection();
   }
 

@@ -12,9 +12,11 @@ import { NgClass } from '@angular/common';
   styleUrl: './done-button.scss'
 })
 export class DoneButton {
+  @Input() index!: number;
   game!: Game;
   player!:Player;
-  @Input() index!: number;
 
-  constructor(public gameModel: GameModel, public fbs: FirebaseService) { }
+  constructor(public gameModel: GameModel, public fbs: FirebaseService) {
+    // this.gameModel.showDoneButton = this.gameModel.mySelf.isActive ? true : false;
+  }
 }

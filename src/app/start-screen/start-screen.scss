@@ -1,6 +1,10 @@
 @import "../../mixins.scss";
 @import "../../fonts.scss";
 
+.disNone {
+    display: none !important;
+}
+
 .start-screen {
     @include disFlex($aI: center, $jC: center);
     width: 100vw;
