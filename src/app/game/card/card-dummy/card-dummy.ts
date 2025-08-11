@@ -74,28 +74,12 @@ export class CardDummy {
     this.checkIfCardRotates();
   }
 
-  /* takeCardAutomatically() {
-    if (this.gameModel.mySelf && !this.gameModel.mySelf.isActive) {
-      this.gameModel.stack.splice(0, 1);
-      this.cardFaceSrc = this.gameModel.stack[0];
-    }
-    this.checkIfCardRotatesAutomatically();
-  } */
-
   checkIfCardRotates() {
     this.gameModel.takeNoMoreCards = true;
     if (this.deg === 0) {
       this.rotateCard();
     } else { return; }
   }
-
-  /* checkIfCardRotatesAutomatically() {
-    if (this.gameModel.mySelf && !this.gameModel.mySelf.isActive) {
-      if (this.deg === 0) {
-        this.rotateCardAutomatically();
-      } else { return; }
-    }
-  } */
 
   rotateCard() {
     this.deg = 180;
@@ -121,28 +105,6 @@ export class CardDummy {
     setTimeout(() => { this.removeCardFromStack() }, 1000);
   }
 
-  /* rotateCardAutomatically() {
-    this.deg = 180;
-    this.cardCoverDummy.nativeElement.style.transform = `rotateY(${this.deg}deg) scale(${1.1 + this.deg * 1.4 / 180})`;
-    this.cardFaceDummy.nativeElement.style.transform = `rotateY(${this.deg}deg) scale(${-(1 + this.deg * 1.5 / 180)}, ${1 + this.deg * 1.5 / 180})`;
-    this.cardCoverHidden = true;
-    this.cardFaceHidden = false;
-    clearInterval(this.intervalCode);
-    setTimeout(() => { this.hideCardDummyAutomatically(); }, 1000);
-    return;
-  } */
-
-  /* hideCardDummyAutomatically() {
-    this.deg = 0;
-    this.cardCoverHidden = true;
-    this.cardFaceHidden = false;
-    this.rotates = false;
-    this.notPicked = false;
-    this.takeCardAnimation = true;
-    this.gameModel.takeNoMoreCards = true;
-    setTimeout(() => { this.removeCardFromStackAutomatically() }, 1000);
-  } */
-
   async removeCardFromStack() {
     clearInterval(this.intervalCode);
     this.gameModel.takenCardsArray.push(this.gameModel.stack[0]);
@@ -155,18 +117,6 @@ export class CardDummy {
     this.cardFaceHidden = true;
     if (this.gameModel.mySelf.isActive) { await this.gameModel.postTakenCards(); }
   }
-
-  /* async removeCardFromStackAutomatically() {
-    clearInterval(this.intervalCode);
-    this.gameModel.takenCardsArray.push(this.gameModel.stack[0]);
-    this.gameModel.takeNoMoreCards = true;
-    this.deg = 0;
-    this.takeCardAnimation = true;
-    this.rotates = false;
-    this.notPicked = false;
-    this.cardFaceHidden = true;
-    this.cardCoverHidden = true;
-  } */
 
   async receiveTakenCards() {
     const takenCards = await this.gameModel.getTakenCards();
