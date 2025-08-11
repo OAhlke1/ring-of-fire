@@ -9,7 +9,6 @@ import { MatCardModule } from '@angular/material/card';
 import { GameInfo } from "./game-info/game-info";
 import { DoneButton } from './done-button/done-button';
 import { MatIcon } from '@angular/material/icon';
-import { getFirestore, doc, addDoc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot, DocumentSnapshot, collection, arrayRemove } from "firebase/firestore";
 import { CardDummy } from './card/card-dummy/card-dummy';
 
 @Component({
@@ -29,16 +28,21 @@ export class Game implements OnInit {
   player!:Player;
   doneButton!:DoneButton;
   card!: Card;
+  reloading: boolean = false;
 
   constructor(public gameModel: GameModel, public fbs: FirebaseService, private cdr: ChangeDetectorRef) { }
   
   async ngOnInit() {
     window.addEventListener('beforeunload', ()=>{ this.gameModel.removePlayer(this.gameModel.mySelf.playerIndex); });
-    window.addEventListener('reload', ()=>{ this.gameModel.postPlayers([]); });
-    window.addEventListener('reload', ()=>{ this.fbs.postCards([]); });
+    window.addEventListener('reload', ()=>{ this.reloadPage(); });
     await this.gameModel.receivePlayers();
     await this.gameModel.receiveCards();
     this.changeDetection();
+  }
+
+  reloadPage() {
+    this.gameModel.reload = true;
+    this.gameModel.removePlayer(this.gameModel.mySelf.playerIndex);
   }
 
   ngOnDestroy() {

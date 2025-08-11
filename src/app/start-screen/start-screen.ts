@@ -1,19 +1,28 @@
-import { Component, signal, model, Input, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, signal, model } from '@angular/core';
 import { Router } from '@angular/router';
 import { GameInfo } from '../game/game-info/game-info';
-import { MatIcon } from '@angular/material/icon';
 import { PlayerDialog } from '../player-dialog/player-dialog';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { NgClass } from '@angular/common';
-import { NgModel } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { MatInput } from '@angular/material/input';
-import { MatDialogRef } from '@angular/material/dialog';
-import { DialogRef } from '@angular/cdk/dialog';
-import { FirebaseAppSettings } from 'firebase/app';
 import { FirebaseService, playerObjectLiteral } from '../models/firebase';
-import { GameModel } from '../models/game-model';
 import { Myself } from '../shared/myself';
+import { getFirestore, doc, onSnapshot, DocumentSnapshot } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD9x5VAZ4j5QuRsKz8vNQE9XHWHJ3_W2as",
+  authDomain: "ring-of-fire-d9f15.firebaseapp.com",
+  projectId: "ring-of-fire-d9f15",
+  storageBucket: "ring-of-fire-d9f15.firebasestorage.app",
+  messagingSenderId: "1018102590409",
+  appId: "1:1018102590409:web:87cb1254a8ff75bfcd9618",
+  measurementId: "G-GEBPK7VCTK"
+};
+import { initializeApp } from "firebase/app";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 @Component({
   standalone: true,
@@ -32,6 +41,9 @@ export class StartScreenComponent {
   playerArray: playerObjectLiteral[] = [];
   cards: string[] = [];
   hideDialoge: boolean = false;
+  nameAlreadyExists: boolean = false;
+  docRefCards = doc(db, 'game', 'cards');
+  docRefPlayers = doc(db, 'game', 'players');
 
   constructor(private router: Router, public fbs: FirebaseService, public ms: Myself) { }
 
@@ -41,17 +53,56 @@ export class StartScreenComponent {
     if (!this.playerArray) { this.playerArray = []; }
     if (this.cards.length < 52) { this.hideDialoge = true; }
     if (this.name() != '') {
-      this.newPlayer = {
-        name: this.name(),
-        playerIndex: this.playerArray.length ? this.playerArray.length : 0,
-        isActive: this.playerArray.length === 0 ? true : false,
-        bgColor: `rgba(${Math.floor(255 * Math.random())}, ${Math.floor(255 * Math.random())}, ${Math.floor(255 * Math.random())}, ${50 * Math.random()})`,
-        playerId: `${this.name()[0]}${this.name()[1]}${this.name()[2]}${Math.floor(100 * Math.random())}`
+      this.nameExistsAlready();
+      if (!this.nameAlreadyExists) {
+        this.whenNameAlreadyExists();
+      } else if (this.nameAlreadyExists) { return; }
+    }
+  }
+
+  getNewMySelf(): playerObjectLiteral {
+    return {
+      name: this.name(),
+      playerIndex: this.playerArray.length ? this.playerArray.length : 0,
+      isActive: this.playerArray.length === 0 ? true : false,
+      bgColor: `rgba(${Math.floor(255 * Math.random())}, ${Math.floor(255 * Math.random())}, ${Math.floor(255 * Math.random())}, ${50 * Math.random()})`,
+      playerId: `${this.name()[0]}${this.name()[1]}${this.name()[2]}${Math.floor(100 * Math.random())}`
+    }
+  }
+
+  async whenNameAlreadyExists() {
+    this.newPlayer = this.getNewMySelf();
+    this.ms.myselfObject = this.newPlayer;
+    this.playerArray.push(this.newPlayer);
+    await this.fbs.postPlayers(this.playerArray);
+    this.router.navigateByUrl('/game');
+  }
+
+  async setCardsSnap() {
+    onSnapshot(this.docRefCards, (docSnap: DocumentSnapshot) => {
+      const data = docSnap.data() as { cards: string[] };
+      if (data.cards.length < this.cards.length) {
+        this.cards = data.cards;
       }
-      this.ms.myselfObject = this.newPlayer;
-      this.playerArray.push(this.newPlayer);
-      await this.fbs.postPlayers(this.playerArray);
-      this.router.navigateByUrl('/game');
+    })
+  }
+
+  async setPlayersSnap() {
+    onSnapshot(this.docRefPlayers, (docSnap: DocumentSnapshot) => {
+      const data = docSnap.data() as { players: playerObjectLiteral[] };
+      if (data.players.length < this.cards.length) {
+        this.playerArray = data.players;
+      }
+    })
+  }
+
+  nameExistsAlready(): any {
+    for (let i = 0; i < this.playerArray.length; i++) {
+      if (this.playerArray[i].name === this.name()) {
+        this.nameAlreadyExists = true;
+      } else if (this.playerArray[i].name !== this.name()) {
+        if (i === this.playerArray.length - 1) { this.nameAlreadyExists = false; }
+      }
     }
   }
 }

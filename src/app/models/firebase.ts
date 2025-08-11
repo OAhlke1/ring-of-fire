@@ -62,7 +62,6 @@ export class FirebaseService {
     }
   }
 
-  /* TRIAL ONLY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
   async getPlayers(): Promise<any[]> {
     return new Promise(async (res, rej) => {
       const docSnap = await getDoc(this.docRefPlayers);
@@ -76,11 +75,9 @@ export class FirebaseService {
     })
   }
 
-  /* TRIAL ONLY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
   async postPlayers(players: any[]) {
     await updateDoc(this.docRefPlayers, {
       players: players
     });
-    console.log(players);
   }
 }

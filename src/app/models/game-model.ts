@@ -5,6 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { PlayerDialog } from '../player-dialog/player-dialog';
 import { getFirestore, doc, addDoc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot, DocumentSnapshot, collection, arrayRemove } from "firebase/firestore";
 import { Myself } from '../shared/myself';
+import { Router } from '@angular/router';
 
 const firebaseConfig = {
     apiKey: "AIzaSyD9x5VAZ4j5QuRsKz8vNQE9XHWHJ3_W2as",
@@ -47,12 +48,13 @@ export class GameModel {
     public cardCount: number = 0;
     public showDoneButton: boolean = true;
     public hasInteracted: boolean = false;
+    public reload = false;
 
     dialogRef!: any;
     myselfExists: boolean = false;
     playerDialog!: PlayerDialog;
 
-    constructor(private fbs: FirebaseService, public dialog: MatDialog, public ngz: NgZone, public ms: Myself) {
+    constructor(private fbs: FirebaseService, public dialog: MatDialog, public ngz: NgZone, public ms: Myself, public router: Router) {
         this.mySelf = ms.myselfObject;
         this.showDoneButton = this.ms.myselfObject.isActive ? true : false;
         for (let i = 0; i < 52; i++) {
@@ -288,8 +290,8 @@ export class GameModel {
         this.playersArray.splice(index, 1);
         this.setPlayerIndicesAtUnload();
         this.setNewPlayerActive();
-        // localStorage.removeItem('player-id');
         await this.postPlayers(this.playersArray);
+        if (this.reload) { this.router.navigateByUrl('/'); }
         return;
     }
 
@@ -321,13 +323,16 @@ export class GameModel {
 
     checkIfIAmActive() {
         for (let player of this.playersArray) {
-            if (this.playersArray[this.mySelf.playerIndex].isActive) {
-                this.mySelf.isActive = true;
-                this.cardsCanBeClicked = true;
-                this.showDoneButton = true;
-            }else {
-                this.mySelf.isActive = false;
-                this.showDoneButton = false;
+            if (this.playersArray[player.playerIndex].playerId === this.mySelf.playerId) {
+                console.log(this.playersArray[player.playerIndex].playerId, player.playerId, player);
+                this.mySelf.isActive = player.isActive;
+                if (this.mySelf.isActive) {
+                    this.cardsCanBeClicked = true;
+                    this.showDoneButton = true;
+                } else {
+                    this.mySelf.isActive = false;
+                    this.showDoneButton = false;
+                }
             }
         }
     }

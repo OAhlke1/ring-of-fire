@@ -2,7 +2,7 @@ import { NgClass } from '@angular/common';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { GameModel } from '../../../models/game-model';
 import { FirebaseService } from '../../../models/firebase';
-import { getFirestore, doc, addDoc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot, DocumentSnapshot, collection, arrayRemove } from "firebase/firestore";
+import { onSnapshot, DocumentSnapshot } from "firebase/firestore";
 
 @Component({
   selector: 'card-dummy',
@@ -25,12 +25,16 @@ export class CardDummy {
   cardCoverHidden: boolean = false;
   cardFaceHidden: boolean = true;
   rotates: boolean = false;
+  onLoad: boolean = true;
 
   constructor(public gameModel: GameModel, public fbs: FirebaseService) { }
 
   ngAfterViewInit() {
     this.setCardsSnap();
-    this.receiveTakenCards();
+    if (this.onLoad) {
+      this.onLoad = false;
+      this.receiveTakenCards();
+    }
   }
 
   async setCardsSnap() {
@@ -41,7 +45,6 @@ export class CardDummy {
         if (data.cards.length < this.gameModel.stack.length) {
           this.gameModel.takeNoMoreCards = false;
           if (!this.gameModel.takeNoMoreCards) {
-            this.gameModel.takeNoMoreCards = true;
             this.gameModel.takeNoMoreCards = true;
             this.takeCardAutomatically();
           }
@@ -54,123 +57,93 @@ export class CardDummy {
     if (this.gameModel.mySelf && this.gameModel.mySelf.isActive && this.gameModel.cardsCanBeClicked) {
       this.gameModel.cardsCanBeClicked = false;
       this.gameModel.takeNoMoreCards = false;
-      if (!this.gameModel.takeNoMoreCards) {
-        this.takeCard();
-      }
+      if (!this.gameModel.takeNoMoreCards) { this.takeCard(); }
     }
   }
 
   async takeCard() {
     if (this.gameModel.mySelf && this.gameModel.mySelf.isActive) {
-      this.cardFaceSrc = this.gameModel.stack[0];
       this.gameModel.stack.splice(0, 1);
+      this.cardFaceSrc = this.gameModel.stack[0];
       await this.fbs.postCards(this.gameModel.stack);
       this.gameModel.takeNoMoreCards = true;
-      if (this.cardIndex === this.gameModel.stack.length - 1) {
-        if (!this.takeCardAnimation) {
-          this.notPicked = false;
-          this.takeCardAnimation = true;
-        } else if (this.takeCardAnimation) {
-          this.notPicked = true;
-          this.takeCardAnimation = false;
-        }
-        this.cursorOverCard = false;
-      }
     }
     this.checkIfCardRotates();
+  }
+
+  takeCardAutomatically() {
+    if (this.gameModel.mySelf && !this.gameModel.mySelf.isActive) {
+      this.gameModel.stack.splice(0, 1);
+      this.cardFaceSrc = this.gameModel.stack[0];
+    }
+    this.checkIfCardRotatesAutomatically();
   }
 
   checkIfCardRotates() {
     if (this.gameModel.mySelf && this.gameModel.mySelf.isActive) {
       this.gameModel.takeNoMoreCards = true;
       if (this.deg === 0) {
-        this.intervalCode = setInterval(() => { this.rotateCard() }, this.frequency);
+        this.rotateCard();
       } else { return; }
     }
-  }
-
-  takeCardAutomatically() {
-    if (this.gameModel.mySelf && !this.gameModel.mySelf.isActive) {
-      this.cardFaceSrc = this.gameModel.stack[0];
-      if (this.cardIndex === this.gameModel.stack.length - 1) {
-        if (!this.takeCardAnimation) {
-          this.notPicked = false;
-          this.takeCardAnimation = true;
-        } else if (this.takeCardAnimation) {
-          this.notPicked = true;
-          this.takeCardAnimation = false;
-        }
-        this.cursorOverCard = false;
-      }
-    }
-    this.checkIfCardRotatesAutomatically();
   }
 
   checkIfCardRotatesAutomatically() {
     if (this.gameModel.mySelf && !this.gameModel.mySelf.isActive) {
       if (this.deg === 0) {
-        this.intervalCode = setInterval(() => { this.rotateCardAutomatically() }, this.frequency);
+        this.rotateCardAutomatically();
       } else { return; }
     }
   }
 
   rotateCard() {
-    this.deg++;
+    this.deg = 180;
     this.cardCoverDummy.nativeElement.style.transform = `rotateY(${this.deg}deg) scale(${1.1 + this.deg * 1.4 / 180})`;
     this.cardFaceDummy.nativeElement.style.transform = `rotateY(${this.deg}deg) scale(${-(1 + this.deg * 1.5 / 180)}, ${1 + this.deg * 1.5 / 180})`;
-    if (this.deg === 90) {
-      /* if (!this.cardCoverHidden && this.cardFaceHidden) {
-        this.cardCoverHidden = true;
-        this.cardFaceHidden = false;
-      } else if (this.cardCoverHidden && !this.cardFaceHidden) {
-        this.cardCoverHidden = false;
-        this.cardFaceHidden = true;
-      } */
-      this.cardCoverHidden = true;
-      this.cardFaceHidden = false;
-    } else if (this.deg === 180) {
-      clearInterval(this.intervalCode);
-      this.deg = 0;
-      this.cardCoverDummy.nativeElement.style.transform = `rotateY(${this.deg}deg) scale(${1.1 + this.deg * 1.4 / 180})`;
-      this.cardFaceDummy.nativeElement.style.transform = `rotateY(${this.deg}deg) scale(${-(1 + this.deg * 1.5 / 180)}, ${1 + this.deg * 1.5 / 180})`;
-      this.cardCoverHidden = false;
-      this.cardFaceHidden = true;
-      this.rotates = false;
-      this.notPicked = false;
-      this.takeCardAnimation = true;
-      this.gameModel.takeNoMoreCards = true;
-      setTimeout(() => { this.removeCardFromStack() }, 1000);
-      return;
-    }
+    this.cardCoverHidden = true;
+    this.cardFaceHidden = false;
+    clearInterval(this.intervalCode);
+    setTimeout(() => { this.hideCardDummyAutomatically(); }, 1000);
+    return;
+  }
+
+  hideCardDummy() {
+    this.deg = 0;
+    this.cardCoverDummy.nativeElement.style.transform = `rotateY(${this.deg}deg) scale(${1.1 + this.deg * 1.4 / 180})`;
+    this.cardFaceDummy.nativeElement.style.transform = `rotateY(${this.deg}deg) scale(${-(1 + this.deg * 1.5 / 180)}, ${1 + this.deg * 1.5 / 180})`;
+    this.cardCoverHidden = false;
+    this.cardFaceHidden = true;
+    this.rotates = false;
+    this.notPicked = false;
+    this.takeCardAnimation = true;
+    this.gameModel.takeNoMoreCards = true;
+    setTimeout(() => { this.removeCardFromStack() }, 1000);
   }
 
   rotateCardAutomatically() {
-    this.deg++;
+    this.deg = 180;
     this.cardCoverDummy.nativeElement.style.transform = `rotateY(${this.deg}deg) scale(${1.1 + this.deg * 1.4 / 180})`;
     this.cardFaceDummy.nativeElement.style.transform = `rotateY(${this.deg}deg) scale(${-(1 + this.deg * 1.5 / 180)}, ${1 + this.deg * 1.5 / 180})`;
-    if (this.deg === 90) {
-      if (!this.cardCoverHidden && this.cardFaceHidden) {
-        this.cardCoverHidden = true;
-        this.cardFaceHidden = false;
-      } else if (this.cardCoverHidden && !this.cardFaceHidden) {
-        this.cardCoverHidden = false;
-        this.cardFaceHidden = true;
-      }
-    } else if (this.deg === 180) {
-      clearInterval(this.intervalCode);
-      this.deg = 0;
-      this.cardCoverHidden = true;
-      this.cardFaceHidden = false;
-      this.rotates = false;
-      this.notPicked = false;
-      this.takeCardAnimation = true;
-      this.gameModel.takeNoMoreCards = true;
-      setTimeout(() => { this.removeCardFromStackAutomatically() }, 1000);
-      return;
-    }
+    this.cardCoverHidden = true;
+    this.cardFaceHidden = false;
+    clearInterval(this.intervalCode);
+    setTimeout(() => { this.hideCardDummyAutomatically(); }, 1000);
+    return;
+  }
+
+  hideCardDummyAutomatically() {
+    this.deg = 0;
+    this.cardCoverHidden = true;
+    this.cardFaceHidden = false;
+    this.rotates = false;
+    this.notPicked = false;
+    this.takeCardAnimation = true;
+    this.gameModel.takeNoMoreCards = true;
+    setTimeout(() => { this.removeCardFromStackAutomatically() }, 1000);
   }
 
   async removeCardFromStack() {
+    clearInterval(this.intervalCode);
     this.gameModel.takenCardsArray.push(this.gameModel.stack[0]);
     this.gameModel.takeNoMoreCards = true;
     this.cardFaceHidden = true;
@@ -180,14 +153,12 @@ export class CardDummy {
     this.notPicked = false;
     this.cardCoverHidden = true;
     this.cardFaceHidden = true;
-    // await this.fbs.postCards(this.gameModel.stack);
     await this.gameModel.postTakenCards();
   }
 
   async removeCardFromStackAutomatically() {
     clearInterval(this.intervalCode);
     this.gameModel.takenCardsArray.push(this.gameModel.stack[0]);
-    this.gameModel.stack.splice(0, 1);
     this.gameModel.takeNoMoreCards = true;
     this.deg = 0;
     this.takeCardAnimation = true;
@@ -207,18 +178,5 @@ export class CardDummy {
         }
       })
     } else { this.gameModel.takenCardsArray = []; }
-    // this.takeNoMoreCards = false;
   }
-
-  /* async setTakenCardsSnap() {
-    onSnapshot(this.gameModel.docRefTakenCards, (docSnap: DocumentSnapshot) => {
-      if (docSnap.exists()) {
-        this.receiveTakenCards();
-        return;
-      } else {
-        this.gameModel.takenCardsArray = [];
-        return;
-      }
-    });
-  } */
 }

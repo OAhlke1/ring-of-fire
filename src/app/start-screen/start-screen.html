@@ -1,25 +1,22 @@
 <div class="start-screen">
     <img src="/assets/images/startbox.png" alt="">
 
-    <ol [ngClass]="{'disNone': hideDialoge}">
-        <li>
-            <mat-form-field>
-                <mat-label>What's your name?</mat-label>
-                <input matInput [(ngModel)]="name" minlength="3" />
-            </mat-form-field>
-        </li>
-        <li>
-            <button type="button" matButton="elevated" (click)="postMyself()" [ngClass]="{'submitting-button': true}">Start Game</button>
-        </li>
-    </ol>
+    <div class="middle">
+        <ul [ngClass]="{'disNone': hideDialoge}">
+            <li>
+                <mat-form-field>
+                    <mat-label>What's your name?</mat-label>
+                    <input matInput [(ngModel)]="name" minlength="3" />
+                </mat-form-field>
+            </li>
+            <li>
+                <button type="button" matButton="elevated" (click)="postMyself()"
+                    [ngClass]="{'submitting-button': true}">Start Game</button>
+            </li>
+        </ul>
 
-    <p [ngClass]="{'disNone': !hideDialoge}">
-        Game runs already, sorry!
-    </p>
-
-    <!-- <div class="start-label-box">
-        <div class="start-game-text" (click)="newGame();">
-            <p>Start Game</p>
-        </div>
-    </div> -->
+        <p [ngClass]="{'disNone': !nameAlreadyExists}">
+            Name is already taken - I'm soory!
+        </p>
+    </div>
 </div>
