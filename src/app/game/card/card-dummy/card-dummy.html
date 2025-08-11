@@ -1,0 +1,4 @@
+<div class="card-cont-inner" [ngClass]="{'hover-card': cursorOverCard, 'pick-card': takeCardAnimation, 'rotating': cardRotates}" (click)="clickCard()">
+    <img [ngClass]="{'carddummy-cover': true, 'hidden': cardCoverHidden}" #cardCoverDummy [src]="gameModel.cardBackLink" alt="">
+    <img [ngClass]="{'carddummy-face': true, 'hidden': cardFaceHidden}" #cardFaceDummy [src]="cardFaceSrc" alt="">
+</div>

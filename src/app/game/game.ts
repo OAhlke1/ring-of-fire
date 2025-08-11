@@ -10,11 +10,12 @@ import { GameInfo } from "./game-info/game-info";
 import { DoneButton } from './done-button/done-button';
 import { MatIcon } from '@angular/material/icon';
 import { getFirestore, doc, addDoc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot, DocumentSnapshot, collection, arrayRemove } from "firebase/firestore";
+import { CardDummy } from './card/card-dummy/card-dummy';
 
 @Component({
   standalone: true,
   selector: 'app-game',
-  imports: [NgClass, NgStyle, CommonModule, Card, Player, TakenCards, MatCardModule, MatIcon, GameInfo, DoneButton],
+  imports: [NgClass, NgStyle, CommonModule, Card, Player, TakenCards, MatCardModule, MatIcon, GameInfo, DoneButton, CardDummy],
   templateUrl: './game.html',
   styleUrls: ['./game.scss']
 })
@@ -37,7 +38,6 @@ export class Game implements OnInit {
     window.addEventListener('reload', ()=>{ this.fbs.postCards([]); });
     await this.gameModel.receivePlayers();
     await this.gameModel.receiveCards();
-    await this.gameModel.receiveTakenCards();
     this.changeDetection();
   }
 
@@ -63,17 +63,5 @@ export class Game implements OnInit {
       this.playersShownAtFirstTime = false;
       this.playersHidden = true;
     }
-  }
-
-  async setCardsSnap() {
-    onSnapshot(this.gameModel.docRefCards, (docSnap: DocumentSnapshot) => {
-      if (docSnap.exists() && this.gameModel.mySelf && !this.gameModel.mySelf.isActive && !this.gameModel.takeNoMoreCards) {
-        console.log('card-snap:', this.gameModel.takeNoMoreCards);
-        const data = docSnap.data() as { cards: string[] };
-        const lastCardFromStack: NodeListOf<HTMLElement> = document.querySelectorAll<HTMLElement>('playing-card .card-cont-inner');
-        this.card.takeCardAutomatically();
-        this.card.checkIfCardRotatesAutomatically();
-      }
-    });
   }
 }

@@ -1,4 +1,4 @@
-<div class="card-cont-inner" [ngClass]="{'hover-card': cursorOverCard, 'pick-card': takeCardAnimation, 'rotating': cardRotates}" (click)="clickCard()">
+<div class="card-cont-inner"> <!-- </div> [ngClass]="{'hover-card': cursorOverCard, 'pick-card': takeCardAnimation, 'rotating': cardRotates}" (click)="clickCard()"> -->
     <img #cardCover
         [src]="cardFrontBack.backUrl" alt=""
         [ngClass]="{'cardCover': true, 'hidden': cardCoverHidden}"

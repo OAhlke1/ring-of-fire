@@ -2,13 +2,12 @@
     <div *ngIf="!gameModel.loadingPlayers; else loadingPlayerTemplate"
         [ngClass]="{'player-bar': true, 'players-shown': playersShown && !playersHidden, 'players-hidden': !playersShown && playersHidden}">
         @if(gameModel.playersArray && gameModel.playersArray.length > 0){
-            @for(player of gameModel.playersArray; track player; let index = $index) {
-            <app-player [name]="gameModel.playersArray[index].name"
-                [backgroundColor]="gameModel.playersArray[index].isActive ? 'red' : player.bgColor"
-                [ngClass]="{'is-active': gameModel.playersArray && gameModel.playersArray[index].isActive}"
-                >
-            </app-player>
-            }
+        @for(player of gameModel.playersArray; track player; let index = $index) {
+        <app-player [name]="gameModel.playersArray[index].name"
+            [backgroundColor]="gameModel.playersArray[index].isActive ? 'red' : player.bgColor"
+            [ngClass]="{'is-active': gameModel.playersArray && gameModel.playersArray[index].isActive}">
+        </app-player>
+        }
         }
     </div>
 
@@ -25,6 +24,7 @@
                 [ngStyle]="{'z-index': index}">
             </playing-card>
         </div>
+        <card-dummy></card-dummy>
     </div>
 
     <ng-template #loadingCardTemplate>
@@ -38,9 +38,7 @@
     }
 
     <div class="buttons">
-        <done-button
-         (click)="gameModel.setNewPlayerActive()"
-        >
+        <done-button (click)="gameModel.setNewPlayerActive()">
         </done-button>
         <!-- <button mat-fab color="primary" aria-label="Example icon button with a delete icon"
             [ngClass]="{'add-player': true, 'disNone': gameModel.myselfExists}" (click)="gameModel.openDialog()">

@@ -8,11 +8,12 @@
     column-gap: $cG;
 }
 
-@mixin position($pos: relative, $t: unset, $r: unset, $b: unset, $l: unset, $fWrap: nowrap) {
+@mixin position($pos: relative, $t: unset, $r: unset, $b: unset, $l: unset, $fWrap: nowrap, $zIndex: 0) {
     position: $pos;
     top: $t;
     right: $r;
     bottom: $b;
     left: $l;
     flex-wrap: $fWrap;
+    z-index: $zIndex;
 }

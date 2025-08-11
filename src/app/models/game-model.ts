@@ -55,7 +55,6 @@ export class GameModel {
     constructor(private fbs: FirebaseService, public dialog: MatDialog, public ngz: NgZone, public ms: Myself) {
         this.mySelf = ms.myselfObject;
         this.showDoneButton = this.ms.myselfObject.isActive ? true : false;
-        console.log('donebuttonsate:', this.showDoneButton);
         for (let i = 0; i < 52; i++) {
             if (i % 8 === 0) {
                 this.playedCardPositions.push({
@@ -117,7 +116,7 @@ export class GameModel {
         }
         this.showHideDoneButton();
         this.setPlayersSnap();
-        this.setTakenCardsSnap();
+        // this.setTakenCardsSnap();
     }
 
     showHideDoneButton() {
@@ -229,18 +228,6 @@ export class GameModel {
         });
     }
 
-    async setTakenCardsSnap() {
-        onSnapshot(this.docRefTakenCards, (docSnap: DocumentSnapshot) => {
-            if (docSnap.exists()) {
-                this.receiveTakenCards();
-                return;
-            } else {
-                this.takenCardsArray = [];
-                return;
-            }
-        });
-    }
-
     async receivePlayers() {
         const players = await this.getPlayers();
         if (players) {
@@ -264,19 +251,6 @@ export class GameModel {
                 rej(new Error('Keine anderen Saufkumpanen vorhanden'));
             }
         })
-    }
-
-    async receiveTakenCards() {
-        const takenCards = await this.getTakenCards();
-        if (takenCards) {
-            this.ngz.run(() => {
-                if (takenCards.length > 0) {
-                    this.takenCardsArray = takenCards;
-                    this.takenCardsArrayForRendering = takenCards;
-                }
-            })
-        } else { this.takenCardsArray = []; }
-        // this.takeNoMoreCards = false;
     }
 
     async getTakenCards(): Promise<any[]> {
@@ -334,7 +308,6 @@ export class GameModel {
             this.playersArray[indexActive].isActive = false;
             this.playersArray[indexNewActive].isActive = true;
             this.postPlayers(this.playersArray);
-            console.log(this.playersArray, this.mySelf.isActive);
         }
     }
 
