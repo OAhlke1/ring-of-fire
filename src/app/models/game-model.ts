@@ -1,9 +1,9 @@
-import { ChangeDetectorRef, Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { initializeApp } from "firebase/app";
 import { FirebaseService, playerObjectLiteral } from './firebase';
 import { MatDialog } from '@angular/material/dialog';
 import { PlayerDialog } from '../player-dialog/player-dialog';
-import { getFirestore, doc, addDoc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot, DocumentSnapshot, collection, arrayRemove } from "firebase/firestore";
+import { getFirestore, doc, getDoc, updateDoc, onSnapshot, DocumentSnapshot } from "firebase/firestore";
 import { Myself } from '../shared/myself';
 import { Router } from '@angular/router';
 
@@ -41,22 +41,24 @@ export class GameModel {
     public docRefCards = doc(db, 'game', 'cards');
     public docRefTakenCards = doc(db, 'game', 'taken-cards');
     public loadingPlayers: boolean = true;
-    public playerId: any = localStorage['player-id'] ? localStorage.getItem('player-id') : "";
+    public playerId!: any;
     public cardsCanBeClicked: boolean = true;
     public takeNoMoreCards: boolean = true;
     public deg = 0;
     public cardCount: number = 0;
-    public showDoneButton: boolean = true;
+    public showDoneButton: boolean = false;
     public hasInteracted: boolean = false;
     public reload = false;
+    public cardFaceSrc: string = '';
+    public cardRule: string = '';
 
     dialogRef!: any;
     myselfExists: boolean = false;
     playerDialog!: PlayerDialog;
 
     constructor(private fbs: FirebaseService, public dialog: MatDialog, public ngz: NgZone, public ms: Myself, public router: Router) {
-        this.mySelf = ms.myselfObject;
-        this.showDoneButton = this.ms.myselfObject.isActive ? true : false;
+        const pId = localStorage.getItem('myId');
+        this.playerId = pId;
         for (let i = 0; i < 52; i++) {
             if (i % 8 === 0) {
                 this.playedCardPositions.push({
@@ -116,14 +118,12 @@ export class GameModel {
                 })
             }
         }
-        this.showHideDoneButton();
+        // this.showHideDoneButton();
         this.setPlayersSnap();
-        // this.setTakenCardsSnap();
     }
 
     showHideDoneButton() {
         if (this.mySelf.isActive) {
-            this.showDoneButton = true;
         } else { this.showDoneButton = false; }
     }
 
@@ -138,19 +138,11 @@ export class GameModel {
             }
             await this.shuffleStack(this.stack);
         } else {
-            // this.takenCardsArray.push(this.stack[this.stack.length-1]);
             this.stack = cards;
             this.fbs.cardStack = cards;
             this.loadingCards = false;
         }
     }
-
-    /* setCardTakenArray(value: boolean) {
-        for (let i = 0; i < this.stack.length; i++) {
-            this.cardTakenArray.push(value);
-        }
-        this.cardTakenArray[this.cardTakenArray.length - 1] = false;
-    } */
 
     async shuffleStack(array: string[]) {
         let currentIndex = array.length;
@@ -165,7 +157,6 @@ export class GameModel {
         } catch (error) {
             this.loadingCards = false;
         }
-        // this.setCardTakenArray(true);
     }
 
     setPlayerIndices() {
@@ -194,30 +185,6 @@ export class GameModel {
         this.playersArray = players;
     }
 
-    openDialog(): void {
-        const dialogRef = this.dialog.open(PlayerDialog);
-        dialogRef.afterClosed().subscribe(result => {
-            if (result.playerName && !this.mySelf) {
-                this.playerId = `${Math.floor(100 * Math.random())}${result.playerName[0]}${result.playerName[1]}${result.playerName[2]}`;
-                localStorage.setItem('player-id', this.playerId);
-                let newPlayer = {
-                    name: result.playerName,
-                    playerIndex: this.playersArray ? this.playersArray.length : 0,
-                    bgColor: `rgba(${Math.floor(255 * Math.random())}, ${Math.floor(255 * Math.random())}, ${Math.floor(255 * Math.random())}, ${50 * Math.random()})`,
-                    isActive: this.playersArray && this.playersArray.length === 0 ? true : false,
-                    playerId: this.playerId
-                }
-                this.playersArray.push(newPlayer);
-                this.mySelf = newPlayer;
-                this.myselfIndex = newPlayer.playerIndex;
-                this.myselfExists = true;
-                this.postPlayers(this.playersArray);
-            } else if (!result || !result.classListCopy || !result.playerName) {
-                return;
-            }
-        });
-    }
-
     async setPlayersSnap() {
         onSnapshot(this.docRefPlayers, (docSnap: DocumentSnapshot) => {
             if (docSnap.exists()) {
@@ -236,10 +203,9 @@ export class GameModel {
             this.ngz.run(() => {
                 if (players) { this.playersArray = players; }
                 if (this.playersArray.length > 0) { this.setMyselfIndex(); }
-                this.checkIfIAmActive();
+                if(this.mySelf) { this.checkIfIAmActive(); }
             })
         } else { this.playersArray = []; }
-        // this.takeNoMoreCards = false;
     }
 
     async getPlayers(): Promise<any[]> {
@@ -268,7 +234,6 @@ export class GameModel {
     }
 
     async postTakenCards() {
-        // if(this.stack.length + this.takenCardsArray.length > 52) { this.takenCardsArray.splice(this.takenCardsArray.length - 1, 1); }
         await updateDoc(this.docRefTakenCards, {
             takenCards: this.takenCardsArray
         })
@@ -280,25 +245,15 @@ export class GameModel {
         }
     }
 
-    async postPlayers(players: any[]) {
+    async postPlayers(players: any[] = this.playersArray) {
         await updateDoc(this.docRefPlayers, {
-            players: this.playersArray
+            players: players
         });
     }
 
-    async removePlayer(index: number) {
-        this.playersArray.splice(index, 1);
-        this.setPlayerIndicesAtUnload();
-        this.setNewPlayerActive();
-        await this.postPlayers(this.playersArray);
-        if (this.reload) { this.router.navigateByUrl('/'); }
-        return;
-    }
-
-    setNewPlayerActive() {
+    async setNextPlayerActive() {
         if (this.mySelf && this.mySelf.isActive) {
             let indexActive = 0;
-            this.mySelf.isActive = false;
             this.takeNoMoreCards = false;
             for (let i = 0; i < this.playersArray.length; i++) {
                 if (this.playersArray[i].isActive) {
@@ -306,10 +261,11 @@ export class GameModel {
                     break;
                 }
             }
+            this.mySelf.isActive = false;
             let indexNewActive = indexActive + 1 === this.playersArray.length ? 0 : indexActive + 1;
             this.playersArray[indexActive].isActive = false;
             this.playersArray[indexNewActive].isActive = true;
-            this.postPlayers(this.playersArray);
+            await this.postPlayers(this.playersArray);
         }
     }
 
@@ -324,11 +280,9 @@ export class GameModel {
     checkIfIAmActive() {
         for (let player of this.playersArray) {
             if (this.playersArray[player.playerIndex].playerId === this.mySelf.playerId) {
-                console.log(this.playersArray[player.playerIndex].playerId, player.playerId, player);
                 this.mySelf.isActive = player.isActive;
                 if (this.mySelf.isActive) {
                     this.cardsCanBeClicked = true;
-                    this.showDoneButton = true;
                 } else {
                     this.mySelf.isActive = false;
                     this.showDoneButton = false;
@@ -336,4 +290,176 @@ export class GameModel {
             }
         }
     }
+
+  showCardRule():string {
+    let rule = "";
+    switch(this.giveCase()) {
+      case 'ace': {
+        rule = this.setAceRules();
+        break;
+      }
+      case 'clubs': {
+        rule = this.setClubsRules();
+        break;
+      }
+      case 'diamonds': {
+        rule = this.setDiamondsRules();
+        break;
+      }
+      case 'ace': {
+        rule = this.setHeartsRules();
+        break;
+      }
+      case null: {
+        rule = "Field for card rules"
+        break;
+      }
+    }
+    return rule;
+  }
+
+  giveCase() {
+    if(this.cardFaceSrc.includes('ace')) {
+      return 'ace';
+    }else if(this.cardFaceSrc.includes('ace')) {
+      return 'clubs';
+    }else if(this.cardFaceSrc.includes('ace')) {
+      return 'diamonds';
+    }else if(this.cardFaceSrc.includes('ace')) {
+      return 'hearts';
+    }else {
+      return null;
+    }
+  }
+
+  setAceRules(): string {
+    let src = this.cardFaceSrc;
+    if(src.includes('_1.')) {
+      return 'Do a hand-standing 1!';
+    }else if(src.includes('_2.')) {
+      return 'Do a hand-standing 2!';
+    }else if(src.includes('_3.')) {
+      return 'Do a hand-standing 3!';
+    }else if(src.includes('_4.')) {
+      return 'Do a hand-standing 4!';
+    }else if(src.includes('_5.')) {
+      return 'Do a hand-standing 5!';
+    }else if(src.includes('_6.')) {
+      return 'Do a hand-standing 6!';
+    }else if(src.includes('_7.')) {
+      return 'Do a hand-standing 7!';
+    }else if(src.includes('_8.')) {
+      return 'Do a hand-standing 8!';
+    }else if(src.includes('_9.')) {
+      return 'Do a hand-standing 9!';
+    }else if(src.includes('_10.')) {
+      return 'Do a hand-standing 10!';
+    }else if(src.includes('_11.')) {
+      return 'Do a hand-standing 11!';
+    }else if(src.includes('_12.')) {
+      return 'Do a hand-standing 12!';
+    }else if(src.includes('_13.')) {
+      return 'Do a hand-standing 13!';
+    }else { return 'Field for card rules'}
+  }
+
+  setClubsRules(): string {
+    let src = this.cardFaceSrc;
+    if(src.includes('_1.')) {
+      return 'Do a hand-standing 1!';
+    }else if(src.includes('_2.')) {
+      return 'Do a hand-standing 2!';
+    }else if(src.includes('_3.')) {
+      return 'Do a hand-standing 3!';
+    }else if(src.includes('_4.')) {
+      return 'Do a hand-standing 4!';
+    }else if(src.includes('_5.')) {
+      return 'Do a hand-standing 5!';
+    }else if(src.includes('_6.')) {
+      return 'Do a hand-standing 6!';
+    }else if(src.includes('_7.')) {
+      return 'Do a hand-standing 7!';
+    }else if(src.includes('_8.')) {
+      return 'Do a hand-standing 8!';
+    }else if(src.includes('_9.')) {
+      return 'Do a hand-standing 9!';
+    }else if(src.includes('_10.')) {
+      return 'Do a hand-standing 10!';
+    }else if(src.includes('_11.')) {
+      return 'Do a hand-standing 11!';
+    }else if(src.includes('_12.')) {
+      return 'Do a hand-standing 12!';
+    }else if(src.includes('_13.')) {
+      return 'Do a hand-standing 13!';
+    }else { return 'Field for card rules'}
+  }
+
+  setDiamondsRules(): string {
+    let src = this.cardFaceSrc;
+    if(src.includes('_1.')) {
+      return 'Do a hand-standing 1!';
+    }else if(src.includes('_2.')) {
+      return 'Do a hand-standing 2!';
+    }else if(src.includes('_3.')) {
+      return 'Do a hand-standing 3!';
+    }else if(src.includes('_4.')) {
+      return 'Do a hand-standing 4!';
+    }else if(src.includes('_5.')) {
+      return 'Do a hand-standing 5!';
+    }else if(src.includes('_6.')) {
+      return 'Do a hand-standing 6!';
+    }else if(src.includes('_7.')) {
+      return 'Do a hand-standing 7!';
+    }else if(src.includes('_8.')) {
+      return 'Do a hand-standing 8!';
+    }else if(src.includes('_9.')) {
+      return 'Do a hand-standing 9!';
+    }else if(src.includes('_10.')) {
+      return 'Do a hand-standing 10!';
+    }else if(src.includes('_11.')) {
+      return 'Do a hand-standing 11!';
+    }else if(src.includes('_12.')) {
+      return 'Do a hand-standing 12!';
+    }else if(src.includes('_13.')) {
+      return 'Do a hand-standing 13!';
+    }else { return 'Field for card rules'}
+  }
+
+  setHeartsRules(): string {
+    let src = this.cardFaceSrc;
+    if(src.includes('_1.')) {
+      return 'Do a hand-standing 1!';
+    }else if(src.includes('_2.')) {
+      return 'Do a hand-standing 2!';
+    }else if(src.includes('_3.')) {
+      return 'Do a hand-standing 3!';
+    }else if(src.includes('_4.')) {
+      return 'Do a hand-standing 4!';
+    }else if(src.includes('_5.')) {
+      return 'Do a hand-standing 5!';
+    }else if(src.includes('_6.')) {
+      return 'Do a hand-standing 6!';
+    }else if(src.includes('_7.')) {
+      return 'Do a hand-standing 7!';
+    }else if(src.includes('_8.')) {
+      return 'Do a hand-standing 8!';
+    }else if(src.includes('_9.')) {
+      return 'Do a hand-standing 9!';
+    }else if(src.includes('_10.')) {
+      return 'Do a hand-standing 10!';
+    }else if(src.includes('_11.')) {
+      return 'Do a hand-standing 11!';
+    }else if(src.includes('_12.')) {
+      return 'Do a hand-standing 12!';
+    }else if(src.includes('_13.')) {
+      return 'Do a hand-standing 13!';
+    }else { return 'Field for card rules'}
+  }
+
+  updateRule() {
+    /* this.ngZone.run(() => {
+      this.cardRule = this.showCardRule();
+    }); */
+    this.cardRule = this.showCardRule(); 
+  }
 }

@@ -3,10 +3,11 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
 import { GameModel } from '../../../models/game-model';
 import { FirebaseService } from '../../../models/firebase';
 import { onSnapshot, DocumentSnapshot } from "firebase/firestore";
+import { GameInfo } from '../../game-info/game-info';
 
 @Component({
   selector: 'card-dummy',
-  imports: [NgClass,],
+  imports: [NgClass, GameInfo],
   templateUrl: './card-dummy.html',
   styleUrl: './card-dummy.scss'
 })
@@ -17,7 +18,6 @@ export class CardDummy {
   cardIndex: number = 0;
   deg: number = 0;
   frequency: number = 25;
-  cardFaceSrc: string = '';
   cursorOverCard: boolean = false;
   cardRotates: boolean = false;
   takeCardAnimation: boolean = false;
@@ -26,15 +26,17 @@ export class CardDummy {
   cardFaceHidden: boolean = true;
   rotates: boolean = false;
   onLoad: boolean = true;
+  gameInfo!: GameInfo;
 
   constructor(public gameModel: GameModel, public fbs: FirebaseService) { }
 
   ngAfterViewInit() {
     this.setCardsSnap();
     if (this.onLoad) {
-      this.onLoad = false;
+      this.onLoad = true;
       this.receiveTakenCards();
     }
+    this.gameModel.updateRule();
   }
 
   async setCardsSnap() {
@@ -44,7 +46,7 @@ export class CardDummy {
         const data = docSnap.data() as { cards: string[] };
         if (data.cards.length < this.gameModel.stack.length) {
           this.gameModel.takeNoMoreCards = false;
-          if (!this.gameModel.takeNoMoreCards) {
+          if (!this.gameModel.takeNoMoreCards && !this.onLoad) {
             this.gameModel.takeNoMoreCards = true;
             this.takeCard();
           }
@@ -55,6 +57,7 @@ export class CardDummy {
 
   clickCard() {
     if (this.gameModel.mySelf && this.gameModel.mySelf.isActive && this.gameModel.cardsCanBeClicked) {
+      this.onLoad = false;
       this.gameModel.cardsCanBeClicked = false;
       this.gameModel.takeNoMoreCards = false;
       if (!this.gameModel.takeNoMoreCards) { this.takeCard(); }
@@ -64,12 +67,13 @@ export class CardDummy {
   async takeCard() {
     if (this.gameModel.mySelf && this.gameModel.mySelf.isActive) {
       this.gameModel.stack.splice(0, 1);
-      this.cardFaceSrc = this.gameModel.stack[0];
+      this.gameModel.cardFaceSrc = this.gameModel.stack[0];
+      this.gameModel.updateRule();
       if (this.gameModel.mySelf.isActive) { await this.fbs.postCards(this.gameModel.stack); }
       this.gameModel.takeNoMoreCards = true;
     } else if (this.gameModel.mySelf && !this.gameModel.mySelf.isActive) {
       this.gameModel.stack.splice(0, 1);
-      this.cardFaceSrc = this.gameModel.stack[0];
+      this.gameModel.cardFaceSrc = this.gameModel.stack[0];
     }
     this.checkIfCardRotates();
   }
@@ -115,7 +119,10 @@ export class CardDummy {
     this.notPicked = false;
     this.cardCoverHidden = true;
     this.cardFaceHidden = true;
-    if (this.gameModel.mySelf.isActive) { await this.gameModel.postTakenCards(); }
+    if (this.gameModel.mySelf.isActive) {
+      this.gameModel.showDoneButton = true;
+      await this.gameModel.postTakenCards();
+    }
   }
 
   async receiveTakenCards() {

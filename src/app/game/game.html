@@ -24,8 +24,8 @@
                 [ngStyle]="{'z-index': index}">
             </playing-card>
         </div>
-        <card-dummy></card-dummy>
     </div>
+    <card-dummy></card-dummy>
 
     <ng-template #loadingCardTemplate>
         <p>Loading cards...</p>
@@ -38,13 +38,8 @@
     }
 
     <div class="buttons">
-        <done-button (click)="gameModel.setNewPlayerActive()">
-        </done-button>
-        <!-- <button mat-fab color="primary" aria-label="Example icon button with a delete icon"
-            [ngClass]="{'add-player': true, 'disNone': gameModel.myselfExists}" (click)="gameModel.openDialog()">
-            <mat-icon>add</mat-icon>
-        </button> -->
-
+        <game-info></game-info>
+        <done-button (click)="gameModel.setNextPlayerActive()"></done-button>
         <button mat-fab color="primary" aria-label="Example icon button with a delete icon"
             [ngClass]="{'show-hide-players': true, 'disNone': playersHidden}" (click)="showHidePlayers()">
             <mat-icon>visibility</mat-icon>
@@ -54,7 +49,8 @@
             [ngClass]="{'show-hide-players': true, 'disNone': !playersHidden}" (click)="showHidePlayers()">
             <mat-icon>visibility_off</mat-icon>
         </button>
-        <game-info></game-info>
     </div>
-
+    <button class="leave-game" mat-fab color="primary" (click)="removeMyself()">
+        <mat-icon>close</mat-icon>
+    </button>
 </div>

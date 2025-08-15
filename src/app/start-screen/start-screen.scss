@@ -13,6 +13,10 @@
     background-color: #404040;
     @include position($pos: relative);
     overflow-x: hidden;
+    background-image: url('/assets/images/startbox.png');
+    background-position: center;
+    background-size: 100%;
+    background-repeat: no-repeat;
 
     img {
         // min-width: 500px;

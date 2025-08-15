@@ -30,12 +30,12 @@ export type playerObjectLiteral = { name: string, playerIndex: number, isActive:
 export class FirebaseService {
   private game!: Game;
   private player!: Player;
-  players: any[] = [];
   public docRefPlayers = doc(db, 'game', 'players');
   private docRefCards = doc(db, 'game', 'cards');
   public cardStack: string[] = [];
   public activePlayer!: playerObjectLiteral;
   public card!: Card;
+  players: any[] = [];
 
   constructor() { }
 
@@ -67,7 +67,6 @@ export class FirebaseService {
       const docSnap = await getDoc(this.docRefPlayers);
       if (docSnap) {
         const data = docSnap.data() as { players: playerObjectLiteral[] };
-        // this.loadingPlayers = false;
         res(data.players);
       } else {
         rej(new Error('Keine anderen Saufkumpanen vorhanden'));

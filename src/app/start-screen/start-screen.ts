@@ -20,6 +20,7 @@ const firebaseConfig = {
   measurementId: "G-GEBPK7VCTK"
 };
 import { initializeApp } from "firebase/app";
+import { GameModel } from '../models/game-model';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -47,6 +48,25 @@ export class StartScreenComponent {
 
   constructor(private router: Router, public fbs: FirebaseService, public ms: Myself) { }
 
+  async ngOnInit() {
+    this.playerArray = await this.fbs.getPlayers();
+    if(localStorage.getItem('myId')) {
+      // this.gameModel.playerId = localStorage.getItem('myId');
+      if(this.playerArray.length) { this.recreateMyself(); }
+      this.router.navigateByUrl("game");
+      return;
+    }
+  }
+
+  recreateMyself() {
+    for(let i=0; i<this.playerArray.length; i++) {
+      if(this.playerArray[i].playerId === localStorage.getItem('myId')) {
+        this.ms.myselfObject = this.playerArray[i];
+        break;
+      }
+    }
+  }
+
   async postMyself() {
     this.cards = await this.fbs.getCards();
     this.playerArray = await this.fbs.getPlayers();
@@ -55,7 +75,7 @@ export class StartScreenComponent {
     if (this.name() != '') {
       this.nameExistsAlready();
       if (!this.nameAlreadyExists) {
-        this.whenNameAlreadyExists();
+        this.whenNameDoesNotExistYet();
       } else if (this.nameAlreadyExists) { return; }
     }
   }
@@ -70,8 +90,9 @@ export class StartScreenComponent {
     }
   }
 
-  async whenNameAlreadyExists() {
+  async whenNameDoesNotExistYet() {
     this.newPlayer = this.getNewMySelf();
+    localStorage.setItem('myId', this.newPlayer.playerId);
     this.ms.myselfObject = this.newPlayer;
     this.playerArray.push(this.newPlayer);
     await this.fbs.postPlayers(this.playerArray);

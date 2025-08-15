@@ -16,7 +16,5 @@ export class DoneButton {
   game!: Game;
   player!:Player;
 
-  constructor(public gameModel: GameModel, public fbs: FirebaseService) {
-    // this.gameModel.showDoneButton = this.gameModel.mySelf.isActive ? true : false;
-  }
+  constructor(public gameModel: GameModel, public fbs: FirebaseService) { }
 }

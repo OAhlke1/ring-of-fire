@@ -1,17 +1,37 @@
 @import '../../../mixins.scss';
 
 .game-info {
-    @include disFlex($aI: center, $jC: center, $cG: 5%);
+    @include disFlex($aI: center, $jC: center, $cG: 5%, $fWrap: nowrap);
     width: 100%;
 
-    textarea {
-        width: 92%;
+    textarea, mat-input {
+        width: 90%;
         height: 30%;
+        vertical-align: middle;
+        padding-left: 15px;
+        box-sizing: border-box;
+        font-size: calc(0.25vw + 13.2px);
+        text-align: center;
     }
 
     button {
-        width: 3%;
+        min-width: 20px;
+        width: 5%;
+        max-width: 40px !important;
         height: auto;
         aspect-ratio: 1 / 1;
+        padding: 0;
     }
+
+    mat-icon {
+        margin: 0;
+    }
+}
+
+button::ng-deep button.mat-mdc-raised-button mat-icon {
+    max-width: 40px;
+}
+
+::ng-deep span.mat-mdc-button-persistent-ripple.mdc-button__ripple, ::ng-deep span.mat-focus-indicator {
+    max-width: 40px;
 }
