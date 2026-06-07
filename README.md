@@ -28,5 +28,5 @@ My other links:
 
 ## Screenshots
 
-![App Screenshot](https://oscar-ahlke.de/game/ring-of-fire/screenshot-start.webp)
-![App Screenshot](https://oscar-ahlke.de/game/ring-of-fire/screenshot-game.webp)
+![App Screenshot](https://oscar-ahlke.de/games/ring-of-fire/screenshot-start.webp)
+![App Screenshot](https://oscar-ahlke.de/games/ring-of-fire/screenshot-game.webp)
