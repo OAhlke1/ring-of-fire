@@ -15,6 +15,7 @@ Tested by the Developerakademie (www.developerakademie.net)
 -JavaScript
 -TypeScript
 -RxJS
+-Material Design
 
 ## About me
 
@@ -27,4 +28,5 @@ My other links:
 
 ## Screenshots
 
-![App Screenshot](https://oscar-ahlke.de/assets/images/screenshot.webp)
+![App Screenshot](https://oscar-ahlke.de/game/ring-of-fire/screenshot-start.webp)
+![App Screenshot](https://oscar-ahlke.de/game/ring-of-fire/screenshot-game.webp)
