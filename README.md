@@ -1,6 +1,11 @@
 # Ring of fire
 
-This is the the repository for my portfolio.
+This is the the repository for my Ring-Of-Fire game.
+
+Ring-of-Fire ijs a drinking-game in which every player needs to take a card and then must do what the rules for the card say.#
+And also has to drink!
+
+Cheers!
 
 ## Authors
 
